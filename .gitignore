@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Env
+.env
+*.env.local
+
+# Editors/OS
+.DS_Store
+.vscode/
+.idea/
+
+# Docker volumes (local dev data)
+pgdata/
+neo4jdata/
+ollamadata/
