@@ -3,7 +3,7 @@
 Repo scaffold for the Cyber Security Platform MVP: React + FastAPI + PostgreSQL +
 Neo4j + LangGraph/LangChain + Ollama, Docker-deployed, air-gapped-ready.
 
-**Status: Milestone 1 (Planning & Architecture) delivered as this scaffold.**
+**Status:  (Planning & Architecture) delivered as this scaffold.**
 Everything under `backend/app` and `frontend/src` is a real, importable/runnable
 structure with working stubs — routes respond, pages render, the LangGraph
 orchestrator compiles — but nothing is wired to a live database or LLM yet.
