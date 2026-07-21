@@ -74,4 +74,4 @@ docker-compose up --build
 | API calls from frontend to backend | Real, will show data once backend is DB-connected |
 
 ## Next milestone
-See `docs/roadmap/development-roadmap.md` → **Milestone 2 – Core Platform Development.**
+See `docs/roadmap/development-roadmap.md` → ** Core Platform Development.**
