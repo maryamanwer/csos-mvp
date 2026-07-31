@@ -1,4 +1,4 @@
-# CSOS — Cyber Security Operating System
+# Cyber Security Operating System (CSOS)
 
 CSOS is an air-gapped-ready cybersecurity platform that combines a React web
 application, FastAPI services, PostgreSQL, a Neo4j Cyber Knowledge Graph, and a
