@@ -1,10 +1,4 @@
-"""
-Alembic migration environment.
-TODO(P2): run `alembic revision --autogenerate -m "init schema"` once
-the `schema.sql` tables above are mirrored as SQLAlchemy models (they
-already are, in app/models/) — this env.py wires target_metadata so
-autogenerate works out of the box.
-"""
+"""Alembic environment wired to the complete relational model metadata."""
 import sys
 from logging.config import fileConfig
 from pathlib import Path

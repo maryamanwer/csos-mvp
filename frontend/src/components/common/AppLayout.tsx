@@ -9,6 +9,7 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import BugReportIcon from "@mui/icons-material/BugReport";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -16,9 +17,10 @@ const DRAWER_WIDTH = 240;
 
 const NAV_ITEMS = [
   { label: "Executive Dashboard", path: "/dashboard/executive", icon: <DashboardIcon />, roles: ["Admin", "Executive"] },
-  { label: "Analyst Dashboard", path: "/dashboard/analyst", icon: <DashboardIcon />, roles: ["Admin", "Analyst"] },
+  { label: "Analyst Dashboard", path: "/dashboard/analyst", icon: <DashboardIcon />, roles: ["Admin", "Analyst", "Engineer"] },
   { label: "Asset Inventory", path: "/assets", icon: <StorageIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
   { label: "Network Topology", path: "/topology", icon: <AccountTreeIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive", "ComplianceOfficer"] },
+  { label: "Vulnerabilities", path: "/vulnerabilities", icon: <BugReportIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
   { label: "Risk Dashboard", path: "/risk", icon: <SecurityIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
   { label: "Compliance", path: "/compliance", icon: <PolicyIcon />, roles: ["Admin", "ComplianceOfficer", "Executive"] },
   { label: "AI Chat Assistant", path: "/chat", icon: <ChatIcon />, roles: ["Admin", "Analyst", "Engineer", "ComplianceOfficer", "Executive"] },
@@ -30,7 +32,7 @@ const NAV_ITEMS = [
 export const AppLayout = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const role = user?.role ?? "Admin"; // TODO(P2): remove fallback once real auth is wired
+  const role = user?.role;
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -39,7 +41,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
           <Typography variant="h6">Cyber Security Operating System (CSOS)</Typography>
           <Box>
             <Typography variant="body2" component="span" sx={{ mr: 2 }}>
-              {user?.full_name ?? "Guest"} ({role})
+              {user?.full_name} ({role})
             </Typography>
             <button onClick={logout} style={{ cursor: "pointer" }}>
               Sign out
@@ -53,7 +55,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
       >
         <Toolbar />
         <List>
-          {NAV_ITEMS.filter((item) => item.roles.includes(role)).map((item) => (
+          {NAV_ITEMS.filter((item) => role && item.roles.includes(role)).map((item) => (
             <ListItemButton key={item.path} onClick={() => navigate(item.path)}>
               <ListItemIcon>{item.icon}</ListItemIcon>
               <ListItemText primary={item.label} />

@@ -15,15 +15,15 @@
 
 ## Implementation Phase 2 – Core Platform Development
 
-- [ ] PostgreSQL-backed authentication, access/refresh JWT lifecycle, bcrypt hashing
-- [ ] RBAC middleware completion and role seed management
-- [ ] Administration Portal user/role/audit operations
-- [ ] Executive Dashboard KPI and trend widgets
-- [ ] Analyst Dashboard investigation queue
-- [ ] Asset Inventory CRUD, classification, and CSV/Excel import
-- [ ] Asset relationship management in Neo4j
-- [ ] Vulnerability Repository CRUD and import
-- [ ] OpenAPI-documented service completion for the above
+- [x] PostgreSQL-backed authentication, access/refresh JWT lifecycle, bcrypt hashing
+- [x] RBAC middleware completion and role seed management
+- [x] Administration Portal user/role/audit operations
+- [x] Executive Dashboard KPI and trend widgets
+- [x] Analyst Dashboard investigation queue
+- [x] Asset Inventory CRUD, classification, and CSV/Excel import
+- [x] Asset relationship management in Neo4j
+- [x] Vulnerability Repository CRUD and import
+- [x] OpenAPI-documented service completion for the above
 
 ## Implementation Phase 3 – AI & Knowledge Graph Intelligence
 

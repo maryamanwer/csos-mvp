@@ -1,7 +1,4 @@
-"""
-SQLAlchemy engine/session setup for PostgreSQL.
-TODO(P2): add Alembic migration wiring and connection pooling tuning.
-"""
+"""SQLAlchemy engine/session setup with connection health checking."""
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 

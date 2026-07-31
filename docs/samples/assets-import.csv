@@ -1,0 +1,3 @@
+name,type,environment,criticality,owner,ip_address,description
+PAYMENTS-API,application,production,critical,Digital Banking,10.10.20.15,Customer payment processing API
+ANALYTICS-DB,database,production,high,Data Platform,10.10.30.22,Security analytics database
