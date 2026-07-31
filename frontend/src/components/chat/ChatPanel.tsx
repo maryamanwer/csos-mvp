@@ -32,7 +32,7 @@ export const ChatPanel = ({ docked = false }: { docked?: boolean }) => {
           ))}
           {messages.length === 0 && (
             <ListItem>
-              <ListItemText primary="Ask about assets, risks, or compliance." secondary="AI Chat Assistant (stubbed until M3)" />
+              <ListItemText primary="Ask about assets, risks, or compliance." secondary="Model reasoning is planned for Phase 3" />
             </ListItem>
           )}
         </List>

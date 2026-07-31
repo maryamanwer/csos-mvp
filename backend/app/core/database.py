@@ -1,6 +1,6 @@
 """
 SQLAlchemy engine/session setup for PostgreSQL.
-TODO(M2): add Alembic migration wiring and connection pooling tuning.
+TODO(P2): add Alembic migration wiring and connection pooling tuning.
 """
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker

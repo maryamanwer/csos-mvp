@@ -29,7 +29,7 @@ export const ReportsPage = () => {
               <MenuItem value="xlsx">Excel</MenuItem>
             </TextField>
             <Button variant="contained" onClick={handleGenerate}>Generate</Button>
-            {/* TODO(M4): real PDF/Excel generation + download link + history table */}
+            {/* TODO(P4): real PDF/Excel generation + download link + history table */}
           </Stack>
         </CardContent>
       </Card>

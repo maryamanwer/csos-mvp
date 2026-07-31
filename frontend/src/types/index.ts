@@ -42,3 +42,24 @@ export interface ChatMessage {
   content: string;
   agent_trace?: string[];
 }
+
+export interface TopologyNode {
+  id: string;
+  entity_id?: string;
+  label: string;
+  type: string;
+  properties: Record<string, unknown>;
+}
+
+export interface TopologyEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  properties: Record<string, unknown>;
+}
+
+export interface TopologyGraph {
+  nodes: TopologyNode[];
+  edges: TopologyEdge[];
+}

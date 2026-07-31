@@ -28,7 +28,7 @@ export const ExecutiveDashboard = () => {
         <Grid item xs={3}><KpiCard label="Open Vulnerabilities" value="—" /></Grid>
         <Grid item xs={3}><KpiCard label="Compliance %" value="—" /></Grid>
       </Grid>
-      {/* TODO(M2/M4): replace KPI placeholders with real aggregated values,
+      {/* TODO(P2/P4): replace KPI placeholders with real aggregated values,
           and add risk-trend + compliance-by-framework charts (recharts). */}
       <Card>
         <CardContent>

@@ -1,68 +1,103 @@
-# CSOS – AI Multi-Agent Architecture (Milestone 1)
+# CSOS – Provider-Independent AI Multi-Agent Architecture
 
 ## 1. Framework
-- **Orchestration:** LangGraph (state graph of agent nodes + conditional edges)
-- **Agent/tool framework:** LangChain
-- **LLM runtime:** Ollama (local), models: Llama 3.x, Mistral, Qwen — OpenAI-compatible endpoint optional for teams that want a hosted model.
 
-## 2. Agent Roster (MVP)
+- **Orchestration:** LangGraph state graph with agent nodes and conditional routing.
+- **Agent/tool framework:** LangChain-compatible tools over authorized platform APIs and graph queries.
+- **Provider boundary:** Agents call the `ModelProvider` interface rather than importing a vendor/model directly.
+- **Default local runtime:** Ollama.
+- **Model selection:** Environment-configured allow-list and default model.
+- **Compatible model families:** Llama, DeepSeek, Qwen, Mistral, ALLAM, HUMAIN-compatible open/sovereign models, and future Ollama-compatible models.
+
+This design allows a deployment to add or switch a compatible model without
+changing agent routing, prompts, tools, or the wider platform architecture.
+
+## 2. Agent Roster
 
 | Agent | Responsibility | Tools it can call |
 |---|---|---|
-| Orchestrator Agent | Classifies user intent, routes to the right specialist agent(s), merges results | intent classifier (LLM), agent router |
-| Asset Intelligence Agent | Answers questions about assets, ownership, classification, relationships | `get_asset`, `search_assets`, `get_asset_relationships` (Neo4j) |
-| Risk Assessment Agent | Computes/explains risk scores, prioritizes remediation | `get_risk_score`, `list_top_risks`, `get_vulnerabilities_for_asset` |
-| Compliance Agent | Maps controls to frameworks, reports gaps | `get_framework_coverage`, `list_control_gaps`, `get_policy` |
-| AI Chat Assistant | User-facing conversational layer; formats the final answer | delegates to the three agents above via Orchestrator |
+| Orchestrator Agent | Classifies intent, applies role context, routes and merges results | intent classifier, agent router |
+| Asset Intelligence Agent | Answers questions about assets, ownership, classification, and relationships | `get_asset`, `search_assets`, `get_asset_relationships` |
+| Risk Assessment Agent | Computes/explains scores and prioritizes remediation | `get_risk_score`, `list_top_risks`, `get_vulnerabilities_for_asset` |
+| Compliance Agent | Maps controls to frameworks and explains gaps | `get_framework_coverage`, `list_control_gaps`, `get_policy` |
+| AI Chat Assistant | Produces the user-facing response and supporting citations | delegates through the Orchestrator |
 
-Reserved for future phases (not implemented in MVP, but the graph interface accommodates them): Architecture Review Agent, Incident Response Agent, Threat Intelligence Agent, Threat Generator Agent.
+Architecture Review, Incident Response, Threat Intelligence, and Threat
+Generation agents can be added in later implementation phases through the same
+state and provider interfaces.
 
-## 3. Example Execution Graph
+## 3. Execution Graph
 
-```
-User query
+```text
+User query + requesting role
    │
    ▼
-Orchestrator Agent (intent classification)
+Orchestrator Agent (intent classification and authorization context)
    │
    ├──► Asset Intelligence Agent ──┐
-   ├──► Risk Assessment Agent ─────┼──► merge context
+   ├──► Risk Assessment Agent ─────┼──► grounded context
    └──► Compliance Agent ──────────┘
    │
    ▼
-AI Chat Assistant (final natural-language response)
+Configured ModelProvider + selected compatible model
+   │
+   ▼
+AI Chat Assistant (answer + citations + agent trace)
 ```
 
-LangGraph implementation notes:
-- Each agent is a **node**; the Orchestrator's routing function is a **conditional edge**.
-- Shared **state** object carries: `user_query`, `user_role` (for RBAC-aware answers), `retrieved_context`, `agent_trace`.
-- `agent_trace` is returned to the UI so analysts can see which agents/tools were used (explainability).
+The shared state includes `user_query`, `user_role`, `route`,
+`retrieved_context`, `agent_trace`, and `final_reply`.
 
-## 4. Prompting & Grounding
-- Agents are **grounded** by first calling Neo4j/PostgreSQL tools, then passing retrieved facts into the LLM prompt (retrieval-before-generation) to reduce hallucination.
-- System prompts enforce: cite the asset/control IDs used, refuse to answer outside available data, respect the requesting user's role (e.g., Analyst vs Executive phrasing).
+## 4. Provider and Model Resolution
 
-## 5. File Layout
+`backend/app/ai/providers.py` supplies the application boundary:
 
+1. `get_model_provider()` resolves the configured provider.
+2. `resolve_model()` validates a requested model against the configured allow-list.
+3. `OllamaModelProvider` invokes the selected compatible local model.
+4. A future runtime registers another `ModelProvider` factory without agent changes.
+
+Model names are operational configuration, not architectural dependencies. A
+specific sovereign model is enabled only when its weights/license and an
+Ollama-compatible package are available to the deployment.
+
+## 5. Prompting, Grounding, and Controls
+
+- Retrieve authorized Neo4j/PostgreSQL facts before generation.
+- Instruct models to use only supplied facts and identify supporting asset/control IDs.
+- Preserve the requesting role so executive and analyst responses differ appropriately.
+- Return an agent trace for explainability.
+- Reject model selections that are not explicitly enabled.
+- Keep external providers optional; air-gapped operation must remain functional with Ollama.
+
+## 6. File Layout
+
+```text
+backend/app/
+ ├── ai/
+ │    └── providers.py       # ModelProvider interface, registry, Ollama adapter
+ └── agents/
+      ├── orchestrator.py    # LangGraph definition
+      ├── asset_agent.py
+      ├── risk_agent.py
+      ├── compliance_agent.py
+      ├── chat_assistant.py
+      ├── tools/
+      │    ├── asset_tools.py
+      │    ├── risk_tools.py
+      │    └── compliance_tools.py
+      └── state.py
 ```
-backend/app/agents/
- ├── orchestrator.py        # LangGraph graph definition
- ├── asset_agent.py
- ├── risk_agent.py
- ├── compliance_agent.py
- ├── chat_assistant.py
- ├── tools/
- │    ├── asset_tools.py     # Neo4j-backed tools
- │    ├── risk_tools.py
- │    └── compliance_tools.py
- └── state.py                # Shared LangGraph state schema
-```
 
-## 6. Model Configuration (env-driven)
-```
+## 7. Environment Configuration
+
+```dotenv
+AI_PROVIDER=ollama
+AI_DEFAULT_MODEL=llama3.1
+AI_AVAILABLE_MODELS=llama3.1,deepseek-r1,qwen2.5,mistral,allam
 OLLAMA_BASE_URL=http://ollama:11434
-OLLAMA_MODEL=llama3.1
-# optional OpenAI-compatible fallback
+
+# Optional provider configuration for a future registered adapter
 OPENAI_COMPATIBLE_BASE_URL=
 OPENAI_COMPATIBLE_API_KEY=
 ```

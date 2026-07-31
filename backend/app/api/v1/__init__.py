@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import admin, assets, auth, chat, compliance, reports, risk, standards
+from app.api.v1 import admin, assets, auth, chat, compliance, reports, risk, standards, topology
 
 api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router)
@@ -11,3 +11,4 @@ api_router.include_router(standards.router)
 api_router.include_router(chat.router)
 api_router.include_router(reports.router)
 api_router.include_router(admin.router)
+api_router.include_router(topology.router)

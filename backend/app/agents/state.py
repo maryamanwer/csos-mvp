@@ -1,6 +1,6 @@
 """
 Shared state passed between nodes in the LangGraph orchestrator graph.
-TODO(M3): extend with retrieved_context typing per agent and message history.
+TODO(P3): extend with retrieved_context typing per agent and message history.
 """
 from typing import TypedDict
 

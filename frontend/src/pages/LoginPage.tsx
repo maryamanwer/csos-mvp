@@ -4,8 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const LoginPage = () => {
-  const [email, setEmail] = useState("admin@csos.local");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("admin@csos.com");
+  const [password, setPassword] = useState("csos-demo");
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();

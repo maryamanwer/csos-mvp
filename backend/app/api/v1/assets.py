@@ -1,6 +1,6 @@
 """
 Asset inventory endpoints, backed by the Neo4j Knowledge Graph.
-TODO(M2): implement create/update/delete + CSV/Excel bulk import.
+TODO(P2): implement create/update/delete + CSV/Excel bulk import.
 """
 from fastapi import APIRouter, Depends
 
@@ -13,7 +13,7 @@ router = APIRouter(prefix="/assets", tags=["assets"])
 
 @router.get("", response_model=list[AssetOut])
 def list_assets(user: dict = Depends(require_role("Admin", "Engineer", "Analyst", "Executive"))):
-    # TODO(M2): pagination, filtering by type/criticality/environment
+    # TODO(P2): pagination, filtering by type/criticality/environment
     rows = neo4j_client.run("MATCH (a:Asset) RETURN a LIMIT 100")
     return [
         AssetOut(

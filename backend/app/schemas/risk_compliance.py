@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class RiskOut(BaseModel):
@@ -27,5 +27,5 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
-    agent_trace: list[str] = []
+    agent_trace: list[str] = Field(default_factory=list)
     conversation_id: str

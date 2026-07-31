@@ -13,8 +13,9 @@ import { ChatAssistantPage } from "@/pages/ChatAssistantPage";
 import { CustomStandardsPage } from "@/pages/CustomStandardsPage";
 import { ReportsPage } from "@/pages/ReportsPage";
 import { AdministrationPage } from "@/pages/AdministrationPage";
+import { NetworkTopologyPage } from "@/pages/NetworkTopologyPage";
 
-// TODO(M2): add a real <ProtectedRoute> that checks useAuth().user and
+// TODO(P2): add a real <ProtectedRoute> that checks useAuth().user and
 // redirects to /login if absent, instead of rendering AppLayout unconditionally.
 const Protected = ({ children }: { children: React.ReactNode }) => <AppLayout>{children}</AppLayout>;
 
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/dashboard/analyst" element={<Protected><AnalystDashboard /></Protected>} />
           <Route path="/assets" element={<Protected><AssetInventoryPage /></Protected>} />
           <Route path="/assets/:assetId" element={<Protected><AssetDetailsPage /></Protected>} />
+          <Route path="/topology" element={<Protected><NetworkTopologyPage /></Protected>} />
           <Route path="/risk" element={<Protected><RiskDashboardPage /></Protected>} />
           <Route path="/compliance" element={<Protected><ComplianceDashboardPage /></Protected>} />
           <Route path="/chat" element={<Protected><ChatAssistantPage /></Protected>} />

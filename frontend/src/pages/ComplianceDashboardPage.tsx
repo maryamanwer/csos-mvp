@@ -13,7 +13,7 @@ export const ComplianceDashboardPage = () => {
   return (
     <>
       <Typography variant="h4" gutterBottom>Compliance Dashboard</Typography>
-      {/* TODO(M4): framework selector + donut chart; this table is the MVP baseline */}
+      {/* TODO(P4): add framework selector and coverage visualization */}
       <TableContainer component={Paper}>
         <Table>
           <TableHead>

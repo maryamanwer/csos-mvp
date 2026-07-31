@@ -1,6 +1,6 @@
 """
-Compliance Engine endpoints (MVP implementation).
-TODO(M4): compute real coverage_pct from Control/Framework graph relationships.
+Compliance Engine endpoints (core platform scaffold).
+TODO(P4): compute real coverage_pct from Control/Framework graph relationships.
 """
 from fastapi import APIRouter, Depends
 
@@ -12,7 +12,7 @@ router = APIRouter(prefix="/compliance", tags=["compliance"])
 
 @router.get("/coverage", response_model=list[ComplianceFrameworkCoverage])
 def framework_coverage(user: dict = Depends(require_role("Admin", "ComplianceOfficer", "Executive"))):
-    # TODO(M4): replace with real Neo4j aggregation:
+    # TODO(P4): replace with real Neo4j aggregation:
     # MATCH (c:Control)-[:PART_OF]->(f:Framework) ... count met vs total
     return [
         ComplianceFrameworkCoverage(framework="ISO 27001", total_controls=93, controls_met=61, coverage_pct=65.6),

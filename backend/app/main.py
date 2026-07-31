@@ -10,8 +10,8 @@ from app.core.config import settings
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="Cyber Security Platform (CSOS) — MVP backend",
-    version="0.1.0-m1",
+    description="Cyber Security Operating System (CSOS) backend",
+    version="0.1.0",
 )
 
 app.add_middleware(

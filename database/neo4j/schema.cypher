@@ -1,5 +1,5 @@
 // ============================================================
-// CSOS Neo4j Knowledge Graph Schema (Milestone 1)
+// CSOS Neo4j Knowledge Graph Schema (Implementation Phase 1)
 // Node labels, constraints, indexes, and example relationships
 // ============================================================
 

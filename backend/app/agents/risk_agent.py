@@ -1,6 +1,6 @@
 """
 Risk Assessment Agent — LangGraph node.
-TODO(M3): LLM-driven reasoning over retrieved risk/vulnerability data,
+TODO(P3): model-driven reasoning over retrieved risk/vulnerability data,
 producing a ranked, explained remediation recommendation.
 """
 from app.agents.state import AgentState

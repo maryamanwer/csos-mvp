@@ -23,6 +23,12 @@ export const me = () => api.get("/auth/me");
 export const listAssets = () => api.get("/assets");
 export const getAsset = (id: string) => api.get(`/assets/${id}`);
 
+// ---- Network Topology ----
+export const getTopology = (focusAssetId?: string) =>
+  api.get("/topology", {
+    params: focusAssetId ? { focus_asset_id: focusAssetId } : undefined,
+  });
+
 // ---- Risk ----
 export const topRisks = (limit = 5) => api.get(`/risk/top?limit=${limit}`);
 
