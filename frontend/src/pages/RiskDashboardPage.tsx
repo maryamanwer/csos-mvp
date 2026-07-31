@@ -13,7 +13,7 @@ export const RiskDashboardPage = () => {
   return (
     <>
       <Typography variant="h4" gutterBottom>Risk Dashboard</Typography>
-      {/* TODO(M4): likelihood x impact heatmap (recharts ScatterChart or custom SVG grid) */}
+      {/* TODO(P4): likelihood x impact heatmap (recharts ScatterChart or custom SVG grid) */}
       <TableContainer component={Paper}>
         <Table>
           <TableHead>

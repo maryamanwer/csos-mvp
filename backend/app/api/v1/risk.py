@@ -1,6 +1,6 @@
 """
-Risk Engine endpoints (MVP implementation).
-TODO(M4): finalize scoring formula (likelihood x impact x asset criticality weighting).
+Risk Engine endpoints (core platform scaffold).
+TODO(P4): finalize scoring formula (likelihood x impact x asset criticality weighting).
 """
 from fastapi import APIRouter, Depends
 

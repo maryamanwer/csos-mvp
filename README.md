@@ -1,51 +1,74 @@
-# CSOS — Cyber Security Platform (MVP)
+# CSOS — Cyber Security Operating System
 
-Repo scaffold for the Cyber Security Platform MVP: React + FastAPI + PostgreSQL +
-Neo4j + LangGraph/LangChain + Ollama, Docker-deployed, air-gapped-ready.
+CSOS is an air-gapped-ready cybersecurity platform that combines a React web
+application, FastAPI services, PostgreSQL, a Neo4j Cyber Knowledge Graph, and a
+provider-independent AI layer with Ollama as the default local runtime.
 
-**Status:  (Planning & Architecture) delivered as this scaffold.**
-Everything under `backend/app` and `frontend/src` is a real, importable/runnable
-structure with working stubs — routes respond, pages render, the LangGraph
-orchestrator compiles — but nothing is wired to a live database or LLM yet.
-Every stub is marked `TODO(M2)/(M3)/(M4)` showing exactly which milestone
-implements it for real. See `docs/roadmap/development-roadmap.md` for the
-full build order.
+**Status: Implementation Phase 1 (Planning & Architecture) is complete and
+ready for stakeholder review.** The repository includes the defined-scope
+documents, data models, runnable application scaffold, interactive Network
+Topology foundation, and local container orchestration.
 
-## Read first
-1. `docs/requirements/requirements.md` — functional & non-functional requirements
-2. `docs/architecture/solution-architecture.md` — layered architecture, data flow, deployment
-3. `docs/architecture/ai-agent-architecture.md` — multi-agent design (LangGraph)
-4. `docs/wireframes/wireframes.md` — the 11 MVP screens
-5. `docs/roadmap/development-roadmap.md` — milestone-by-milestone task list
-6. `database/postgresql/schema.sql` + `database/neo4j/schema.cypher` — data model
+The scaffold intentionally separates delivered foundations from later platform
+implementation. Planned work is marked `TODO(P2)`, `TODO(P3)`, or `TODO(P4)` so
+the build sequence remains visible without overstating feature completeness.
 
-## Repo layout
-```
+## Phase 1 deliverables
+
+1. `docs/requirements/requirements.md` — functional and non-functional requirements
+2. `docs/architecture/solution-architecture.md` — layered architecture, topology flow, and deployment
+3. `docs/architecture/ai-agent-architecture.md` — provider-independent multi-agent design
+4. `docs/wireframes/wireframes.md` — 12 core platform screens
+5. `docs/roadmap/development-roadmap.md` — implementation-phase task list
+6. `docs/implementation-readiness.md` — scope-to-evidence completion matrix
+7. `database/postgresql/schema.sql` and `database/neo4j/schema.cypher` — platform data model
+8. Runnable backend/frontend scaffold and Docker Compose environment
+
+## Repository layout
+
+```text
 csos-mvp/
-├── docs/                        Milestone 1 deliverables
+├── docs/                         Planning, architecture, wireframes, roadmap
 ├── database/
 │   ├── postgresql/schema.sql     Users, RBAC, audit, config, uploads, reports
-│   └── neo4j/schema.cypher       Cyber Knowledge Graph: constraints + relationships
+│   └── neo4j/schema.cypher       Graph constraints, relationships, demo data
 ├── backend/
+│   ├── .env.example              Safe local configuration template
 │   └── app/
-│       ├── main.py                FastAPI entrypoint
-│       ├── core/                  config.py, security.py (JWT/RBAC), database.py
-│       ├── api/v1/                auth, assets, risk, compliance, standards, chat, reports, admin
-│       ├── models/                SQLAlchemy models (Postgres)
-│       ├── schemas/                Pydantic request/response schemas
-│       ├── graph/                  Neo4j client wrapper
-│       └── agents/                 LangGraph orchestrator + Asset/Risk/Compliance/Chat agents
+│       ├── ai/                    Provider-independent model adapters
+│       ├── api/v1/                Versioned REST endpoints
+│       ├── graph/                 Neo4j client and topology projection
+│       ├── agents/                LangGraph agent scaffold
+│       ├── models/                SQLAlchemy/PostgreSQL models
+│       └── schemas/               API request/response models
 ├── frontend/
 │   └── src/
-│       ├── pages/                  11 MVP screens
-│       ├── components/             AppLayout (role-aware nav), ChatPanel
-│       ├── contexts/                AuthContext
-│       ├── services/                api.ts (axios client)
-│       └── theme.ts                 CSOS design system
-└── docker-compose.yml            postgres + neo4j + ollama + backend + frontend
+│       ├── pages/                 Role-aware platform screens
+│       ├── components/            Layout, chat, interactive topology graph
+│       ├── contexts/              Authentication context
+│       └── services/              API client
+└── docker-compose.yml             Full local platform orchestration
 ```
 
-## Running locally (once M2+ dependencies are installed)
+## Run locally
+
+Prerequisites: Docker Desktop with Compose support.
+
+```bash
+docker compose up --build
+```
+
+The Compose environment waits for PostgreSQL and Neo4j, initializes the Neo4j
+schema and sample relationships automatically, starts the API, and then serves
+the web application through Nginx.
+
+- Web application: `http://localhost:3000`
+- API documentation: `http://localhost:8000/docs`
+- Neo4j Browser: `http://localhost:7474`
+- Development login: `admin@csos.com` / `csos-demo`
+
+For local development without containers:
+
 ```bash
 # Backend
 cd backend
@@ -53,25 +76,47 @@ cp .env.example .env
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 
-# Frontend
+# Frontend (separate terminal)
 cd frontend
 npm install
 npm run dev
-
-# Or everything via Docker
-docker-compose up --build
 ```
 
-## What's real vs mocked in this scaffold
-| Area | State |
-|---|---|
-| FastAPI app, routing, CORS, health check | Real, runs today |
-| JWT issue/verify, RBAC dependency | Real logic; login uses a mock user until M2 wires the DB |
-| SQLAlchemy models matching `schema.sql` | Real, ready for Alembic autogenerate |
-| Neo4j client + example Cypher queries | Real; needs a running Neo4j instance |
-| LangGraph orchestrator graph (compiles, runs end-to-end) | Real graph wiring; agent "reasoning" is stubbed (no LLM call yet — that's M3) |
-| React pages, routing, role-aware nav, theme | Real, renders today |
-| API calls from frontend to backend | Real, will show data once backend is DB-connected |
+## Delivered foundations vs planned implementation
 
-## Next milestone
-See `docs/roadmap/development-roadmap.md` → ** Core Platform Development.**
+| Area | Current state |
+|---|---|
+| FastAPI routing, CORS, health endpoint, OpenAPI | Runnable |
+| JWT issue/verify and role dependencies | Runnable with a development account; PostgreSQL auth is Phase 2 |
+| PostgreSQL schema and matching SQLAlchemy models | Ready for migrations and service wiring |
+| Neo4j schema, relationships, automatic local seed | Runnable through Docker Compose |
+| Network Topology API and interactive graph screen | Implemented; generated from Neo4j relationships |
+| Asset relationship topology tab | Implemented; focuses the selected asset's neighborhood |
+| Provider-independent model boundary | Implemented; Ollama default with configurable compatible models |
+| LangGraph orchestrator | Compiles; model-driven reasoning and streaming are Phase 3 |
+| Risk, compliance, reporting, standards ingestion | API/UI foundations exist; production logic follows the roadmap |
+
+## AI model configuration
+
+Ollama is the default local runtime. Models are selected from environment
+configuration rather than being hard-coded into agents:
+
+```dotenv
+AI_PROVIDER=ollama
+AI_DEFAULT_MODEL=llama3.1
+AI_AVAILABLE_MODELS=llama3.1,deepseek-r1,qwen2.5,mistral,allam
+```
+
+Additional Llama, DeepSeek, Qwen, Mistral, ALLAM, HUMAIN-compatible, or other
+sovereign/open models can be enabled when available in an Ollama-compatible
+package. New runtime providers implement the same model-provider interface, so
+agent and application architecture does not need to change.
+
+## Validation
+
+```bash
+cd backend && pytest
+cd frontend && npm run build
+```
+
+See `docs/roadmap/development-roadmap.md` for the next implementation phase.

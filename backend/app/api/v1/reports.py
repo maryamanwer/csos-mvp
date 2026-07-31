@@ -1,6 +1,6 @@
 """
 Reporting endpoints (PDF/Excel export).
-TODO(M4): implement PDF generation via reportlab and Excel via openpyxl,
+TODO(P4): implement PDF generation via reportlab and Excel via openpyxl,
 persist metadata to the `reports` table, and store files on disk/volume.
 """
 from fastapi import APIRouter, Depends
@@ -16,5 +16,5 @@ def generate_report(
     format: str = "pdf",
     user: dict = Depends(require_role("Admin", "ComplianceOfficer", "Executive")),
 ):
-    # TODO(M4): real generation; for now return a stub descriptor
+    # TODO(P4): real generation; for now return a scaffold descriptor
     return {"report_type": report_type, "format": format, "status": "queued"}

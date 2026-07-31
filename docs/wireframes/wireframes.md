@@ -1,56 +1,69 @@
-# CSOS – UI Wireframes (Text Spec, Milestone 1)
+# CSOS – UI Wireframes (Text Specification)
 
-10–12 MVP screens. Each entry lists layout regions and key components; visual mockups to be produced in Milestone 2 alongside implementation.
+The platform uses a persistent role-aware navigation rail, top application bar,
+and consistent design system across 12 core screens.
 
 ## 1. Login
-- Center card: logo, email, password, "Sign in" button, error banner.
+- Center card: logo, email, password, sign-in action, error banner.
 
 ## 2. Executive Dashboard
-- Top: KPI cards (Overall Risk Score, Assets, Open Vulnerabilities, Compliance %).
-- Middle: Risk trend line chart (last 90 days), Compliance-by-framework bar chart.
-- Right rail: Top 5 risks list, recent AI Chat insights.
+- KPI cards: overall risk score, assets, open vulnerabilities, compliance coverage.
+- Risk trend and compliance-by-framework charts.
+- Top risks and recent AI insights.
+- Shortcut to interactive Network Topology.
 
 ## 3. Analyst Dashboard
-- Left: Filterable queue (severity, asset type, status).
-- Center: Selected item detail (vulnerability/risk detail panel).
-- Right: AI Chat Assistant docked panel for quick queries.
+- Filterable investigation queue by severity, asset type, and status.
+- Selected vulnerability/risk detail panel.
+- Docked AI Chat Assistant and topology shortcut.
 
 ## 4. Asset Inventory
-- Top: search + filters (type, criticality, environment).
-- Table: Name, Type, Owner, Criticality, Risk Score, Last Seen.
-- Row action → Asset Details.
-- "Import CSV/Excel" button top-right.
+- Search and filters for type, criticality, and environment.
+- Table: name, type, owner, criticality, risk score, last seen.
+- Row action opens Asset Details.
+- CSV/Excel import action.
 
 ## 5. Asset Details
-- Header: name, type, criticality badge.
-- Tabs: Overview | Relationships (graph view) | Vulnerabilities | Compliance Controls | History.
+- Header: name, type, owner, and criticality.
+- Tabs: Overview | Relationships | Vulnerabilities | Compliance Controls | History.
+- Relationships tab embeds an asset-centered interactive topology generated from Neo4j.
 
-## 6. Risk Dashboard
-- Heatmap (likelihood x impact).
-- Prioritized risk table with score, affected asset, recommended action.
+## 6. Network Topology
+- Full-width interactive graph of assets, identities, vulnerabilities, risks, controls, policies, and frameworks.
+- Relationship names rendered on directed edges.
+- Pan, zoom, reset, search, and entity-type filters.
+- Node selection opens a property detail panel.
+- Metrics show visible entity and relationship counts.
+- Data is generated from stored/imported Neo4j relationships; live discovery is not required.
 
-## 7. Compliance Dashboard
-- Framework selector (ISO 27001, NIST CSF, Custom).
-- Coverage donut + control gap table.
+## 7. Risk Dashboard
+- Likelihood/impact heatmap.
+- Prioritized risk table with score, affected asset, and recommended action.
 
-## 8. AI Chat Assistant
-- Full-page chat, left sidebar with conversation history.
-- Inline citations to asset/control IDs; "agent trace" expandable per message.
+## 8. Compliance Dashboard
+- Framework selector for ISO 27001, NIST CSF, and custom frameworks.
+- Coverage visualization and control-gap table.
 
-## 9. Custom Standards & Policies
-- Upload zone (CSV/Excel/Word/JSON) + manual entry form.
-- Table of uploaded controls with "Map to Assets" action.
+## 9. AI Chat Assistant
+- Full-page chat with conversation history.
+- Inline asset/control citations and expandable agent trace.
+- Model selection can be added from the configured model allow-list without changing the chat flow.
 
-## 10. Reports
-- Report type selector (Risk, Compliance, Asset).
-- Filters + "Generate PDF/Excel" button; history of generated reports.
+## 10. Custom Standards & Policies
+- Upload zone for CSV, Excel, Word, PDF, and JSON plus manual entry.
+- Parsed controls table with asset/framework mapping actions.
 
-## 11. Administration
+## 11. Reports
+- Report type, format, and filter selection.
+- PDF/Excel generation action and report history.
+
+## 12. Administration
 - Tabs: Users | Roles & Permissions | Audit Log | System Settings.
-
-## 12. (Optional MVP+) Knowledge Graph Explorer
-- Interactive Neo4j graph view centered on a selected asset, expandable relationships.
+- AI settings can expose the provider, enabled models, and default model to authorized administrators.
 
 ## Design System
-- MUI theme, primary navy (#1E3A5F), accent teal (#2FA6A6), semantic risk colors (critical=#D32F2F, high=#F57C00, medium=#FBC02D, low=#43A047).
-- Left persistent nav (role-aware — items hidden by RBAC), top app bar with user menu + notifications.
+
+- MUI theme with primary navy (`#1E3A5F`) and accent teal (`#2FA6A6`).
+- Semantic risk colors: critical `#D32F2F`, high `#F57C00`, medium `#FBC02D`, low `#43A047`.
+- Topology entity colors remain consistent across the graph and details panels.
+- Responsive layouts collapse control rows and detail panels on smaller screens.

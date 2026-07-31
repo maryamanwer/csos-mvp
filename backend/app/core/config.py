@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    DEMO_ADMIN_EMAIL: str = "admin@csos.com"
+    DEMO_ADMIN_PASSWORD: str = "csos-demo"
 
     # PostgreSQL
     POSTGRES_HOST: str = "postgres"
@@ -28,9 +30,11 @@ class Settings(BaseSettings):
     NEO4J_USER: str = "neo4j"
     NEO4J_PASSWORD: str = "csos_password"
 
-    # AI / Ollama
+    # AI model provider (Ollama is the default local runtime)
+    AI_PROVIDER: str = "ollama"
+    AI_DEFAULT_MODEL: str = "llama3.1"
+    AI_AVAILABLE_MODELS: str = "llama3.1,deepseek-r1,qwen2.5,mistral,allam"
     OLLAMA_BASE_URL: str = "http://ollama:11434"
-    OLLAMA_MODEL: str = "llama3.1"
     OPENAI_COMPATIBLE_BASE_URL: str = ""
     OPENAI_COMPATIBLE_API_KEY: str = ""
 
@@ -42,6 +46,15 @@ class Settings(BaseSettings):
         return (
             f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+    @property
+    def available_ai_models(self) -> tuple[str, ...]:
+        """Configured model IDs that users may select at runtime."""
+        return tuple(
+            model.strip()
+            for model in self.AI_AVAILABLE_MODELS.split(",")
+            if model.strip()
         )
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)

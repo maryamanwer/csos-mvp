@@ -11,7 +11,7 @@ export const AnalystDashboard = () => {
           <Card sx={{ height: 500 }}>
             <CardContent>
               <Typography variant="h6">Investigation Queue</Typography>
-              {/* TODO(M2): filterable list of open vulnerabilities/risks */}
+              {/* TODO(P2): filterable list of open vulnerabilities/risks */}
               <Typography variant="body2" color="text.secondary">No items — backend not connected yet.</Typography>
             </CardContent>
           </Card>
@@ -20,7 +20,7 @@ export const AnalystDashboard = () => {
           <Card sx={{ height: 500 }}>
             <CardContent>
               <Typography variant="h6">Detail Panel</Typography>
-              {/* TODO(M2): show selected vulnerability/risk detail */}
+              {/* TODO(P2): show selected vulnerability/risk detail */}
               <Typography variant="body2" color="text.secondary">Select an item from the queue.</Typography>
             </CardContent>
           </Card>

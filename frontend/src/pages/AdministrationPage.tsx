@@ -20,15 +20,15 @@ export const AdministrationPage = () => {
       </Tabs>
       {tab === 0 && (
         <Typography color="text.secondary">
-          {users.length === 0 ? "No users yet — backend not connected to live DB (M2)." : `${users.length} users`}
+          {users.length === 0 ? "No users yet — database-backed administration is planned for Phase 2." : `${users.length} users`}
         </Typography>
       )}
       {tab === 2 && (
         <Typography color="text.secondary">
-          {logs.length === 0 ? "No audit entries yet (M2)." : `${logs.length} entries`}
+          {logs.length === 0 ? "No audit entries yet — audit persistence is planned for Phase 2." : `${logs.length} entries`}
         </Typography>
       )}
-      {(tab === 1 || tab === 3) && <Typography color="text.secondary">Coming in Milestone 2/4.</Typography>}
+      {(tab === 1 || tab === 3) && <Typography color="text.secondary">Planned for a later implementation phase.</Typography>}
     </>
   );
 };

@@ -3,7 +3,7 @@ Orchestrator Agent — builds and compiles the LangGraph state graph
 that routes a user query through the right specialist agent(s) and
 produces a final chat reply.
 
-TODO(M3):
+TODO(P3):
   - Replace `_classify_intent` with an LLM call (Ollama) that returns
     one or more of {"asset", "risk", "compliance"} based on user_query.
   - Add conditional edges so only the relevant agent(s) run per query
@@ -20,7 +20,7 @@ from app.agents.state import AgentState
 
 
 def _classify_intent(state: AgentState) -> AgentState:
-    # TODO(M3): LLM-based classification. For the MVP stub, run all agents.
+    # TODO(P3): model-based classification. The current scaffold runs all agents.
     state["route"] = "all"
     return state
 

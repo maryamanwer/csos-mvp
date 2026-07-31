@@ -1,6 +1,6 @@
 """
 Asset Intelligence Agent — LangGraph node.
-TODO(M3): replace the naive keyword lookup with an LLM call (via Ollama)
+TODO(P3): replace the naive keyword lookup with a ModelProvider call
 that decides which asset_tools function(s) to invoke, then summarizes
 the retrieved facts in natural language.
 """

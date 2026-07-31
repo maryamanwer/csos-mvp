@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   postgres:
     image: postgres:16
@@ -11,7 +9,12 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./database/postgresql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - ./database/postgresql/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U csos -d csos"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   neo4j:
     image: neo4j:5-community
@@ -22,6 +25,30 @@ services:
       - "7687:7687"
     volumes:
       - neo4jdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p csos_password 'RETURN 1' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  neo4j-init:
+    image: neo4j:5-community
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    entrypoint: ["/var/lib/neo4j/bin/cypher-shell"]
+    command:
+      - -a
+      - neo4j://neo4j:7687
+      - -u
+      - neo4j
+      - -p
+      - csos_password
+      - -f
+      - /schema/schema.cypher
+    volumes:
+      - ./database/neo4j/schema.cypher:/schema/schema.cypher:ro
+    restart: "no"
 
   ollama:
     image: ollama/ollama:latest
@@ -40,16 +67,25 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - postgres
-      - neo4j
-      - ollama
+      postgres:
+        condition: service_healthy
+      neo4j-init:
+        condition: service_completed_successfully
+      ollama:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
   frontend:
     build: ./frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   pgdata:

@@ -18,7 +18,7 @@ export const AssetInventoryPage = () => {
       <Typography variant="h4" gutterBottom sx={{ display: "flex", justifyContent: "space-between" }}>
         Asset Inventory
         <Button variant="contained">Import CSV/Excel</Button>
-        {/* TODO(M2): wire to POST /assets/import */}
+        {/* TODO(P2): wire to POST /assets/import */}
       </Typography>
       <TableContainer component={Paper}>
         <Table>

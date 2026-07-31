@@ -1,5 +1,5 @@
 -- ============================================================
--- CSOS PostgreSQL Schema (Milestone 1)
+-- CSOS PostgreSQL Schema (Implementation Phase 1)
 -- Scope: Users, Auth, RBAC, Configuration, Audit Logs
 -- (Assets/Risks/Vulns/Policies/Relationships live in Neo4j — see neo4j/schema.cypher)
 -- ============================================================
@@ -99,7 +99,7 @@ CREATE TABLE reports (
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- ---------- Notifications (MVP implementation) ----------
+-- ---------- Notifications (core platform implementation) ----------
 CREATE TABLE notifications (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,

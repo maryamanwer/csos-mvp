@@ -1,6 +1,6 @@
 """
 LangChain tools the Risk Assessment Agent can call.
-TODO(M3): wrap with @tool decorator.
+TODO(P3): wrap with @tool decorator.
 """
 from app.graph.neo4j_client import neo4j_client
 

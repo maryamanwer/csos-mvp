@@ -3,11 +3,11 @@ AI Chat Assistant — final LangGraph node.
 Formats the natural-language reply from whatever context the
 specialist agents retrieved.
 
-TODO(M3): replace the string-templating below with a real Ollama call:
+TODO(P3): replace the string-templating below with a ModelProvider call:
 
-    from langchain_community.llms import Ollama
-    llm = Ollama(base_url=settings.OLLAMA_BASE_URL, model=settings.OLLAMA_MODEL)
-    reply = llm.invoke(build_prompt(state))
+    from app.ai import get_model_provider
+    provider = get_model_provider()
+    reply = provider.generate(build_prompt(state))
 
 The prompt should instruct the model to: only use retrieved_context
 facts (no hallucination), cite asset/control IDs, and phrase the

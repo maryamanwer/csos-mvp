@@ -1,78 +1,102 @@
-# CSOS – Requirements Specification (Milestone 1)
+# CSOS – Requirements Specification
 
 ## 1. Purpose
-Define the functional and non-functional requirements for the Cyber Security Platform (CSOS) MVP, as scoped in the CSOS MVP Scope Clarification document.
+
+Define the business-aligned functional and non-functional requirements for the
+Cyber Security Operating System (CSOS). This specification is the baseline for
+the platform architecture and implementation roadmap.
 
 ## 2. User Roles
+
 | Role | Description | Primary Screens |
 |---|---|---|
-| CISO / Executive | Strategic oversight, KPIs, risk trends | Executive Dashboard, Reports |
-| Security Architect | Designs controls, reviews architecture | Asset Inventory, Knowledge Graph |
-| Security Analyst | Investigates, triages, responds | Analyst Dashboard, AI Chat |
-| Security Engineer | Implements controls, manages assets | Asset Inventory, Asset Details |
-| Compliance Officer | Manages frameworks & audits | Compliance Dashboard, Custom Standards |
-| Administrator | User, role, and system management | Administration Portal |
+| CISO / Executive | Strategic oversight, KPIs, risk trends | Executive Dashboard, Network Topology, Reports |
+| Security Architect | Designs controls and reviews relationships | Asset Inventory, Network Topology, Knowledge Graph |
+| Security Analyst | Investigates, triages, responds | Analyst Dashboard, Interactive Topology, AI Chat |
+| Security Engineer | Implements controls and manages assets | Asset Inventory, Asset Details, Network Topology |
+| Compliance Officer | Manages frameworks and audits | Compliance Dashboard, Custom Standards, Topology |
+| Administrator | Manages users, roles, and system settings | Administration Portal |
 
-## 3. Functional Requirements (MVP scope)
+## 3. Functional Requirements
 
 ### FR-1 Authentication & RBAC
-- FR-1.1 Users authenticate via username/password, issued a JWT.
-- FR-1.2 Roles: Admin, Executive, Analyst, Engineer, Compliance Officer.
-- FR-1.3 Every API endpoint enforces role-based authorization.
+- FR-1.1 Users authenticate through username/password and receive access/refresh JWTs.
+- FR-1.2 Roles include Admin, Executive, Analyst, Engineer, and Compliance Officer.
+- FR-1.3 Protected API endpoints enforce role-based authorization.
 
 ### FR-2 Asset Management
-- FR-2.1 CRUD for assets (servers, apps, network devices, identities).
-- FR-2.2 Asset classification (criticality, data sensitivity, environment).
-- FR-2.3 Asset relationships stored and queryable via the Knowledge Graph.
-- FR-2.4 CSV/Excel bulk import of assets.
+- FR-2.1 Create, read, update, and delete servers, applications, network devices, identities, databases, and cloud resources.
+- FR-2.2 Classify assets by criticality, data sensitivity, and environment.
+- FR-2.3 Store and query asset relationships through the Cyber Knowledge Graph.
+- FR-2.4 Import assets and relationships from CSV/Excel sources.
 
 ### FR-3 Vulnerability Repository
-- FR-3.1 Store vulnerabilities linked to assets (CVE id, severity, status).
-- FR-3.2 Manual entry + CSV import (scanner integrations are mocked in MVP).
+- FR-3.1 Store vulnerabilities linked to assets, including CVE ID, severity, and status.
+- FR-3.2 Support manual entry and CSV import. Live scanner integrations are planned separately.
 
-### FR-4 Risk Engine (MVP implementation)
-- FR-4.1 Compute a risk score per asset from severity, exposure, criticality.
-- FR-4.2 Risk Dashboard with prioritized risk list.
+### FR-4 Risk Engine
+- FR-4.1 Compute an explainable risk score per asset from severity, exposure, and criticality.
+- FR-4.2 Present a prioritized risk list and likelihood/impact view.
 
-### FR-5 Compliance Engine (MVP implementation)
-- FR-5.1 Map controls to frameworks (built-in: ISO 27001, NIST CSF) and custom standards.
-- FR-5.2 Compliance Dashboard showing coverage/gaps per framework.
+### FR-5 Compliance Engine
+- FR-5.1 Map controls to ISO 27001, NIST CSF, and custom standards.
+- FR-5.2 Present framework coverage and control gaps.
 
 ### FR-6 Custom Standards & Policies
-- FR-6.1 Upload standards/policies as PDF, Excel, Word, CSV, JSON.
-- FR-6.2 Manual entry of controls and checklist items.
-- FR-6.3 Map uploaded controls to assets/frameworks.
+- FR-6.1 Upload standards/policies as PDF, Excel, Word, CSV, or JSON.
+- FR-6.2 Support manual entry of controls and checklist items.
+- FR-6.3 Map uploaded controls to assets and frameworks.
 
-### FR-7 AI Layer (Multi-Agent)
-- FR-7.1 Orchestrated agents: Asset Intelligence, Risk Assessment, Compliance, Chat Assistant.
-- FR-7.2 LangGraph state graph coordinates agent hand-off.
-- FR-7.3 Local LLM via Ollama (Llama 3.x / Mistral / Qwen), OpenAI-compatible optional.
+### FR-7 Provider-Independent AI Layer
+- FR-7.1 Orchestrate Asset Intelligence, Risk Assessment, Compliance, and Chat Assistant agents through LangGraph.
+- FR-7.2 Use a shared agent state graph for routing, grounding, and explainability.
+- FR-7.3 Use Ollama as the default local inference runtime.
+- FR-7.4 Select compatible models through configuration rather than agent code. Supported examples include Llama, DeepSeek, Qwen, Mistral, ALLAM, HUMAIN-compatible models, and future sovereign/open models.
+- FR-7.5 Allow a model or provider adapter to be added or switched without restructuring the application or agent architecture.
 
 ### FR-8 Cyber Knowledge Graph
-- FR-8.1 Neo4j stores assets, identities, vulnerabilities, risks, controls, policies and their relationships.
-- FR-8.2 Graph queries exposed via REST API for the UI and AI agents.
+- FR-8.1 Store assets, identities, vulnerabilities, risks, controls, policies, frameworks, and their relationships in Neo4j.
+- FR-8.2 Expose graph queries through REST APIs for the UI and AI agents.
 
-### FR-9 Reporting
-- FR-9.1 Generate PDF/Excel exports for risk, compliance, and asset reports.
+### FR-9 Interactive Network Topology
+- FR-9.1 Generate the topology automatically from entities and relationships stored in Neo4j or imported data.
+- FR-9.2 Visualize assets, identities, vulnerabilities, risks, controls, policies, frameworks, and relationship types.
+- FR-9.3 Support pan, zoom, search, entity-type filtering, node selection, and relationship exploration.
+- FR-9.4 Provide a full topology workspace and an asset-centered relationship view.
+- FR-9.5 Do not require live network discovery; live discovery and topology synchronization are future integration capabilities.
 
-### FR-10 Administration
-- FR-10.1 User management, role assignment, audit log viewer.
+### FR-10 Reporting
+- FR-10.1 Generate PDF/Excel exports for risk, compliance, and asset reports.
+
+### FR-11 Administration
+- FR-11.1 Provide user management, role assignment, audit logs, and system settings.
 
 ## 4. Non-Functional Requirements
-- NFR-1 Deployable via Docker Compose (dev) with air-gapped operation support (no external calls required at runtime).
-- NFR-2 REST APIs documented via OpenAPI/Swagger.
-- NFR-3 Passwords hashed (bcrypt), JWT with expiry & refresh.
-- NFR-4 All layers containerized independently (frontend, backend, postgres, neo4j, ollama).
-- NFR-5 Codebase organized for extension (new agents, new connectors) without core rewrites.
 
-## 5. Out of Scope (MVP)
-See "Out of Scope" section in the CSOS MVP Scope Clarification document — live third-party integrations (AD, SIEM, EDR, scanners, cloud), HA/clustering, mobile app, automated discovery, attack-path automation.
+- NFR-1 Deploy through Docker Compose for local environments and support air-gapped operation with no mandatory external runtime calls.
+- NFR-2 Document REST APIs through OpenAPI/Swagger.
+- NFR-3 Hash stored passwords with bcrypt and expire/rotate access and refresh tokens.
+- NFR-4 Containerize frontend, backend, PostgreSQL, Neo4j, and Ollama independently.
+- NFR-5 Keep the codebase extensible so models, providers, agents, connectors, and visual entity types can be added without core rewrites.
+- NFR-6 Keep graph responses bounded and validate all externally supplied query parameters.
+- NFR-7 Provide automated tests for the core application scaffold and topology projection.
 
-## 6. Acceptance Criteria (Milestone 1)
-- [ ] This requirements document reviewed & approved
-- [ ] Solution architecture document reviewed & approved
-- [ ] PostgreSQL schema drafted and reviewed
-- [ ] Neo4j schema drafted and reviewed
-- [ ] AI agent architecture drafted and reviewed
-- [ ] Development roadmap agreed
-- [ ] Repo scaffold created (this deliverable)
+## 5. Planned Beyond the Core Platform
+
+Live AD/Entra/LDAP, SIEM, EDR, vulnerability scanner, cloud, and ITSM
+connectors; high availability/clustering; mobile clients; automated discovery;
+live topology synchronization; and automated attack-path generation.
+
+## 6. Phase 1 Delivery Readiness
+
+- [x] Requirements specification drafted and aligned to current client feedback
+- [x] Solution architecture and topology data flow documented
+- [x] PostgreSQL and Neo4j schemas drafted
+- [x] Provider-independent AI agent architecture documented and scaffolded
+- [x] UI wireframes include Network Topology as a core screen
+- [x] Implementation roadmap documented without commercial pricing
+- [x] Runnable repository scaffold created with local configuration template
+- [x] Topology API/UI foundation implemented and covered by automated tests
+
+Stakeholder approval is an external governance action and is not represented as
+an implementation checkbox in the repository.

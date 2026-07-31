@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { User } from "@/types";
-import { login as apiLogin } from "@/services/api";
+import { login as apiLogin, me } from "@/services/api";
 
 interface AuthContextValue {
   user: User | null;
@@ -16,8 +16,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     const { data } = await apiLogin(email, password);
     localStorage.setItem("csos_access_token", data.access_token);
-    // TODO(M2): call GET /auth/me to populate the real user object
-    setUser({ id: "stub", email, full_name: "Stub User", role: "Admin", is_active: true });
+    const currentUser = await me();
+    setUser(currentUser.data);
   };
 
   const logout = () => {

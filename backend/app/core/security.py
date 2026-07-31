@@ -2,10 +2,10 @@
 Auth primitives: password hashing, JWT issue/verify, and an RBAC
 dependency for protecting routes by role.
 
-TODO(M2): wire get_current_user to a real DB lookup once the User
+TODO(P2): wire get_current_user to a real DB lookup once the User
 model + session are implemented.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import Depends, HTTPException, status
@@ -28,7 +28,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def create_access_token(subject: str, role: str, expires_delta: Optional[timedelta] = None) -> str:
-    expire = datetime.utcnow() + (
+    expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
     payload = {"sub": subject, "role": role, "exp": expire, "type": "access"}
@@ -36,7 +36,7 @@ def create_access_token(subject: str, role: str, expires_delta: Optional[timedel
 
 
 def create_refresh_token(subject: str) -> str:
-    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    expire = datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     payload = {"sub": subject, "exp": expire, "type": "refresh"}
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
