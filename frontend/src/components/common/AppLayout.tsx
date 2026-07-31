@@ -36,7 +36,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
     <Box sx={{ display: "flex" }}>
       <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
         <Toolbar sx={{ justifyContent: "space-between" }}>
-          <Typography variant="h6">CSOS — Cyber Security Platform</Typography>
+          <Typography variant="h6">Cyber Security Operating System (CSOS)</Typography>
           <Box>
             <Typography variant="body2" component="span" sx={{ mr: 2 }}>
               {user?.full_name ?? "Guest"} ({role})
