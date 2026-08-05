@@ -1,5 +1,5 @@
 -- ============================================================
--- CSOS PostgreSQL Schema (Implementation Phase 1)
+-- CSOS PostgreSQL Schema (Implementation Phase 2)
 -- Scope: Users, Auth, RBAC, Configuration, Audit Logs
 -- (Assets/Risks/Vulns/Policies/Relationships live in Neo4j — see neo4j/schema.cypher)
 -- ============================================================
@@ -46,13 +46,14 @@ CREATE TABLE role_permissions (
 CREATE TABLE refresh_tokens (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token_hash  VARCHAR(255) NOT NULL,
+    token_hash  VARCHAR(255) UNIQUE NOT NULL,
     expires_at  TIMESTAMPTZ NOT NULL,
     revoked     BOOLEAN NOT NULL DEFAULT false,
     created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_refresh_tokens_user_id ON refresh_tokens(user_id);
+CREATE INDEX idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 
 -- ---------- Audit Log ----------
 CREATE TABLE audit_logs (
@@ -116,4 +117,22 @@ INSERT INTO roles (name, description) VALUES
     ('Executive', 'Read-only strategic dashboards'),
     ('Analyst', 'Investigate and respond to risks/vulnerabilities'),
     ('Engineer', 'Manage assets and technical controls'),
-    ('ComplianceOfficer', 'Manage frameworks, policies, and audits');
+    ('ComplianceOfficer', 'Manage frameworks, policies, and audits')
+ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description;
+
+-- ---------- Seed Phase 2 permissions ----------
+INSERT INTO permissions (code, description) VALUES
+    ('dashboard:read', 'View role-appropriate dashboards'),
+    ('asset:read', 'View assets and relationships'),
+    ('asset:write', 'Create and update assets and relationships'),
+    ('vulnerability:read', 'View vulnerabilities'),
+    ('vulnerability:write', 'Create and update vulnerabilities'),
+    ('admin:manage', 'Manage users, roles, and audit information')
+ON CONFLICT (code) DO UPDATE SET description = EXCLUDED.description;
+
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT role.id, permission.id
+FROM roles role
+CROSS JOIN permissions permission
+WHERE role.name = 'Admin'
+ON CONFLICT DO NOTHING;

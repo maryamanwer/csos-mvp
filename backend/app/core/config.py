@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     DEMO_ADMIN_EMAIL: str = "admin@csos.com"
     DEMO_ADMIN_PASSWORD: str = "csos-demo"
+    MAX_IMPORT_ROWS: int = 5000
 
     # PostgreSQL
     POSTGRES_HOST: str = "postgres"

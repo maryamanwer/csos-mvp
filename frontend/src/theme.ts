@@ -14,7 +14,7 @@ export const theme = createTheme({
 });
 
 // Risk/criticality color helper used across dashboards & tables
-export const riskColor = (level: "low" | "medium" | "high" | "critical"): string => {
+export const riskColor = (level: string): string => {
   switch (level) {
     case "critical":
       return "#D32F2F";

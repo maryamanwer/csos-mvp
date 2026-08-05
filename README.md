@@ -4,14 +4,14 @@ CSOS is an air-gapped-ready cybersecurity platform that combines a React web
 application, FastAPI services, PostgreSQL, a Neo4j Cyber Knowledge Graph, and a
 provider-independent AI layer with Ollama as the default local runtime.
 
-**Status: Implementation Phase 1 (Planning & Architecture) is complete and
-ready for stakeholder review.** The repository includes the defined-scope
-documents, data models, runnable application scaffold, interactive Network
-Topology foundation, and local container orchestration.
+**Status: Implementation Phase 2 (Core Platform Development) is complete and
+ready for stakeholder demonstration.** The repository now includes persistent
+authentication, RBAC administration, live dashboards, asset and vulnerability
+management, Neo4j relationship management, bulk imports, audit history, and the
+interactive Network Topology delivered in Phase 1.
 
-The scaffold intentionally separates delivered foundations from later platform
-implementation. Planned work is marked `TODO(P2)`, `TODO(P3)`, or `TODO(P4)` so
-the build sequence remains visible without overstating feature completeness.
+AI intelligence, advanced graph analytics, reporting, and remaining workflow
+automation are explicitly scheduled in Phases 3 and 4.
 
 ## Phase 1 deliverables
 
@@ -23,6 +23,17 @@ the build sequence remains visible without overstating feature completeness.
 6. `docs/implementation-readiness.md` — scope-to-evidence completion matrix
 7. `database/postgresql/schema.sql` and `database/neo4j/schema.cypher` — platform data model
 8. Runnable backend/frontend scaffold and Docker Compose environment
+
+## Phase 2 deliverables
+
+1. PostgreSQL-backed login with access/refresh token rotation and logout revocation
+2. Seeded RBAC permissions and Administration Portal user/role management
+3. Executive KPIs, asset/vulnerability distributions, compliance coverage, and top risks
+4. Analyst investigation queue with risk, asset, and vulnerability context
+5. Asset Inventory CRUD, classification, CSV/XLSX import, and relationship management
+6. Vulnerability Repository CRUD, filtering, import, and asset linking
+7. Audit logging for authentication and administrative/data changes
+8. Neo4j Phase 2 demonstration data and OpenAPI-documented service endpoints
 
 ## Repository layout
 
@@ -82,19 +93,23 @@ npm install
 npm run dev
 ```
 
-## Delivered foundations vs planned implementation
+## Platform delivery status
 
 | Area | Current state |
 |---|---|
 | FastAPI routing, CORS, health endpoint, OpenAPI | Runnable |
-| JWT issue/verify and role dependencies | Runnable with a development account; PostgreSQL auth is Phase 2 |
-| PostgreSQL schema and matching SQLAlchemy models | Ready for migrations and service wiring |
+| PostgreSQL authentication and JWT lifecycle | Implemented with bcrypt, refresh rotation, revocation, and session restoration |
+| RBAC and Administration Portal | Implemented for user, role, permission, and audit operations |
+| Executive and Analyst Dashboards | Implemented from Neo4j assets, risks, vulnerabilities, and controls |
+| Asset Inventory and relationships | Implemented with CRUD, classification, import, and Neo4j relationship management |
+| Vulnerability Repository | Implemented with CRUD, filtering, import, and asset linking |
+| PostgreSQL schema and matching SQLAlchemy models | Implemented and initialized automatically at application startup |
 | Neo4j schema, relationships, automatic local seed | Runnable through Docker Compose |
 | Network Topology API and interactive graph screen | Implemented; generated from Neo4j relationships |
 | Asset relationship topology tab | Implemented; focuses the selected asset's neighborhood |
 | Provider-independent model boundary | Implemented; Ollama default with configurable compatible models |
 | LangGraph orchestrator | Compiles; model-driven reasoning and streaming are Phase 3 |
-| Risk, compliance, reporting, standards ingestion | API/UI foundations exist; production logic follows the roadmap |
+| Risk, compliance, reporting, standards ingestion | Foundations exist; advanced intelligence and delivery follow Phases 3 and 4 |
 
 ## AI model configuration
 
