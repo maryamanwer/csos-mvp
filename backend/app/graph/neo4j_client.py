@@ -411,10 +411,20 @@ class Neo4jClient:
         relationship_limit: int = 500,
         focus_asset_id: str | None = None,
     ) -> dict:
-        query = """
+        node_limit = min(relationship_limit * 2, 4000)
+        node_rows = self.run(
+            """
+        MATCH (entity)
+        RETURN elementId(entity) AS entity_key,
+               labels(entity) AS entity_labels,
+               properties(entity) AS entity_properties
+        LIMIT $limit
+        """,
+            {"limit": node_limit},
+        )
+        relationship_rows = self.run(
+            """
         MATCH (source)-[relationship]->(target)
-        WHERE any(label IN labels(source) WHERE label IN $labels)
-          AND any(label IN labels(target) WHERE label IN $labels)
         RETURN elementId(source) AS source_key,
                labels(source) AS source_labels,
                properties(source) AS source_properties,
@@ -425,15 +435,29 @@ class Neo4jClient:
                type(relationship) AS relationship_type,
                properties(relationship) AS relationship_properties
         LIMIT $limit
-        """
-        rows = self.run(
-            query,
-            {"labels": list(self.TOPOLOGY_LABELS), "limit": relationship_limit},
+        """,
+            {"limit": relationship_limit},
         )
 
         nodes: dict[str, dict] = {}
         edges: dict[str, dict] = {}
-        for row in rows:
+        supported_labels = set(self.TOPOLOGY_LABELS)
+
+        # Load supported entities independently so a newly seeded or imported
+        # node remains visible even before relationships have been created.
+        for row in node_rows:
+            if not supported_labels.intersection(row["entity_labels"]):
+                continue
+            node = self._topology_node(
+                row["entity_key"], row["entity_labels"], row["entity_properties"]
+            )
+            nodes[node["id"]] = node
+
+        for row in relationship_rows:
+            if not supported_labels.intersection(row["source_labels"]):
+                continue
+            if not supported_labels.intersection(row["target_labels"]):
+                continue
             source = self._topology_node(
                 row["source_key"], row["source_labels"], row["source_properties"]
             )

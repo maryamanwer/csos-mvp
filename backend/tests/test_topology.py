@@ -30,10 +30,41 @@ ROWS = [
     },
 ]
 
+NODE_ROWS = [
+    {
+        "entity_key": "neo4j-1",
+        "entity_labels": ["Asset"],
+        "entity_properties": {
+            "id": "asset-001",
+            "name": "ERP-PROD-DB01",
+            "created_at": object(),
+        },
+    },
+    {
+        "entity_key": "neo4j-2",
+        "entity_labels": ["Identity"],
+        "entity_properties": {"id": "identity-001", "name": "svc-erp-db"},
+    },
+    {
+        "entity_key": "neo4j-3",
+        "entity_labels": ["Risk"],
+        "entity_properties": {"id": "risk-001", "title": "Data exposure"},
+    },
+    {
+        "entity_key": "neo4j-4",
+        "entity_labels": ["Control"],
+        "entity_properties": {"id": "control-001", "name": "TLS baseline"},
+    },
+]
+
 
 def topology_client() -> Neo4jClient:
     client = Neo4jClient.__new__(Neo4jClient)
-    client.run = lambda query, parameters=None: ROWS  # type: ignore[method-assign]
+
+    def run(query, parameters=None):
+        return NODE_ROWS if "MATCH (entity)" in query else ROWS
+
+    client.run = run  # type: ignore[method-assign]
     return client
 
 
@@ -44,11 +75,23 @@ def test_topology_projection_normalizes_nodes_and_edges():
         "asset-001",
         "identity-001",
         "risk-001",
+        "control-001",
     }
     assert {edge["type"] for edge in graph["edges"]} == {"OWNED_BY", "AFFECTS"}
     asset = next(node for node in graph["nodes"] if node["id"] == "asset-001")
     assert asset["label"] == "ERP-PROD-DB01"
     assert isinstance(asset["properties"]["created_at"], str)
+
+
+def test_topology_projection_includes_entities_without_relationships():
+    graph = topology_client().get_topology()
+
+    control = next(node for node in graph["nodes"] if node["id"] == "control-001")
+    assert control["label"] == "TLS baseline"
+    assert not any(
+        edge["source"] == "control-001" or edge["target"] == "control-001"
+        for edge in graph["edges"]
+    )
 
 
 def test_topology_projection_can_focus_an_asset_neighborhood():
