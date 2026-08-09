@@ -76,10 +76,14 @@ async def import_assets(
     imported = 0
     for index, row in enumerate(rows, start=2):
         try:
+            data_sources = row.get("data_sources", [])
+            if isinstance(data_sources, str):
+                data_sources = [item.strip() for item in data_sources.split(",") if item.strip()]
             normalized = {
                 **row,
                 "type": str(row.get("type", "")).strip().lower().replace(" ", "_"),
                 "criticality": str(row.get("criticality", "")).strip().lower(),
+                "data_sources": data_sources,
             }
             asset = AssetCreate.model_validate(normalized)
             neo4j_client.create_asset(asset.model_dump())

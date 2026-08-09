@@ -5,7 +5,7 @@
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
 │ 1. Presentation Layer (React + TypeScript + MUI)                 │
-│    Dashboards, Network Topology, AI Chat, Reports, Admin         │
+│    Dashboards, Findings, Network Topology, AI Chat, Reports      │
 ├──────────────────────────────────────────────────────────────────┤
 │ 2. Application Layer (FastAPI, Python)                           │
 │    Auth/RBAC, Assets, Topology Projection, Risk, Compliance      │
@@ -35,7 +35,8 @@
 | Application | API Gateway | Routing, authorization dependencies, validation, OpenAPI | FastAPI |
 | Application | Auth Service | Login, JWT lifecycle, RBAC | FastAPI, python-jose, passlib |
 | Application | Asset Service | Inventory, classification, relationships | FastAPI, Neo4j |
-| Application | Topology Projection | Convert stored Neo4j entities/relationships into bounded UI graph data | FastAPI, Neo4j driver |
+| Application | Findings Projection | Correlate asset, vulnerability, risk, control, identity, and adapter context without duplicating source entities | FastAPI, Neo4j driver |
+| Application | Topology Projection | Convert stored Neo4j entities/relationships and interfaces into bounded UI graph data | FastAPI, Neo4j driver |
 | Application | Risk Engine | Score and prioritize risk | FastAPI |
 | Application | Compliance Engine | Framework/control mapping | FastAPI |
 | Input | Standards Ingestor | Parse, normalize, and map uploaded controls | pandas, python-docx, openpyxl |
@@ -51,11 +52,30 @@
 1. Assets and relationships are created manually, imported, or written by future connectors.
 2. Neo4j remains the source of truth for graph entities and relationship types.
 3. `GET /api/v1/topology` requests a bounded graph projection; an optional asset ID narrows it to the asset's direct neighborhood.
-4. The API returns explicit nodes and edges with stable entity IDs, types, labels, and safe properties.
-5. The React topology workspace renders the response and applies interactive search, type filters, pan, zoom, node selection, and relationship labels.
+4. The API returns explicit nodes and edges with stable entity IDs, types, labels, risk context, edge categories, and interface metadata when stored.
+5. The React topology workspace renders semantic network/security layers and applies search, filters, pan, zoom, fit-to-screen, node/edge selection, relationship highlighting, and detail inspection.
 6. No live network discovery is required for this flow. Future discovery connectors write into the same graph and the visualization updates without an architecture change.
 
-## 4. AI Investigation Data Flow
+## 4. Security Findings Correlation Flow
+
+1. Source adapters or imports normalize asset, vulnerability, risk, identity,
+   control, ownership, EDR, and observation metadata into the Cyber Knowledge
+   Graph.
+2. `GET /api/v1/findings` performs one bounded Neo4j projection across those
+   stored relationships and applies authorized search, filtering, sorting, and
+   pagination on the server.
+3. The Security Findings workspace presents one correlated row per
+   asset/finding pair rather than isolated copies from every tool.
+4. Finding drill-down exposes the investigation chain from asset and owner to
+   vulnerability, controls, risks, identities, and recommended remediation.
+5. `GET /api/v1/findings/export` applies the same filters to a bounded CSV
+   export. Saved views remain user-browser preferences and do not alter source
+   data.
+6. Future connector or MCP services write through the same normalization
+   boundary; the dashboard and graph contracts do not depend on a particular
+   security vendor.
+
+## 5. AI Investigation Data Flow
 
 1. A user asks the AI Chat Assistant a security or compliance question.
 2. The Orchestrator classifies intent and routes to the appropriate specialist agent.
@@ -63,7 +83,7 @@
 4. The configured model provider resolves the selected compatible model and generates a grounded explanation.
 5. The Chat Assistant returns a role-appropriate response with source entity/control IDs and an agent trace.
 
-## 5. Deployment Topology
+## 6. Deployment Topology
 
 ```text
 docker-compose.yml
@@ -80,19 +100,21 @@ inference without an external API call. The Compose stack waits for database
 health, initializes the graph idempotently, and starts the web tier only after
 the API becomes healthy.
 
-## 6. Security Model
+## 7. Security Model
 
 - JWT bearer access and refresh tokens.
 - RBAC enforced by FastAPI dependencies.
 - Password hashes stored with bcrypt when PostgreSQL authentication is enabled.
 - Audit records for authentication and sensitive administrative actions.
 - Bounded topology query limits and validated request parameters.
+- Bounded findings pagination/export and allow-listed sort fields.
 - Development credentials are isolated to the documented development environment.
 
-## 7. Extension Points
+## 8. Extension Points
 
 - New AI models are added through configuration; new runtimes implement the model-provider interface.
 - New agents plug into the LangGraph orchestrator without changing existing agents.
 - Enterprise connectors implement a common connector interface and write normalized graph entities/relationships.
+- Future MCP servers expose approved connector tools through a gateway; MCP is an integration boundary, not a replacement for authorization, normalization, or the Cyber Knowledge Graph.
 - Live topology synchronization consumes the same Neo4j model and API contract.
 - Attack-path analysis consumes the same graph without replacing the topology visualization.

@@ -95,10 +95,18 @@ export const importVulnerabilities = (file: File) => {
   return api.post("/vulnerabilities/import", body);
 };
 
+// Correlated security findings
+export const listSecurityFindings = (params?: Record<string, unknown>) =>
+  api.get("/findings", { params });
+export const getSecurityFinding = (findingId: string, assetId: string) =>
+  api.get(`/findings/${findingId}`, { params: { asset_id: assetId } });
+export const exportSecurityFindings = (params: Record<string, unknown>) =>
+  api.get("/findings/export", { params, responseType: "blob" });
+
 // Network Topology
 export const getTopology = (focusAssetId?: string) =>
   api.get("/topology", {
-    params: focusAssetId ? { focus_asset_id: focusAssetId } : undefined,
+    params: { focus_asset_id: focusAssetId, node_limit: 1500, relationship_limit: 1500 },
   });
 
 // Risk and compliance

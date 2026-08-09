@@ -8,7 +8,9 @@ provider-independent AI layer with Ollama as the default local runtime.
 ready for stakeholder demonstration.** The repository now includes persistent
 authentication, RBAC administration, live dashboards, asset and vulnerability
 management, Neo4j relationship management, bulk imports, audit history, and the
-interactive Network Topology delivered in Phase 1.
+interactive Network Topology delivered in Phase 1. The current security
+operations extension adds a correlated Security Findings workspace and a
+layered, interface-aware topology generated from the Cyber Knowledge Graph.
 
 AI intelligence, advanced graph analytics, reporting, and remaining workflow
 automation are explicitly scheduled in Phases 3 and 4.
@@ -34,6 +36,10 @@ automation are explicitly scheduled in Phases 3 and 4.
 6. Vulnerability Repository CRUD, filtering, import, and asset linking
 7. Audit logging for authentication and administrative/data changes
 8. Neo4j Phase 2 demonstration data and OpenAPI-documented service endpoints
+9. Correlated Security Findings dashboard with 19 security/asset fields,
+   advanced filters, saved views, sorting, pagination, CSV export, and drill-down
+10. Layered network/security topology with interface, IP, VLAN, vulnerability,
+    risk, identity, and security-control context
 
 ## Repository layout
 
@@ -103,9 +109,10 @@ npm run dev
 | Executive and Analyst Dashboards | Implemented from Neo4j assets, risks, vulnerabilities, and controls |
 | Asset Inventory and relationships | Implemented with CRUD, classification, import, and Neo4j relationship management |
 | Vulnerability Repository | Implemented with CRUD, filtering, import, and asset linking |
+| Correlated Security Findings | Implemented with security-gap KPIs, advanced filtering, saved views, CSV export, and finding/asset drill-down |
 | PostgreSQL schema and matching SQLAlchemy models | Implemented and initialized automatically at application startup |
 | Neo4j schema, relationships, automatic local seed | Runnable through Docker Compose |
-| Network Topology API and interactive graph screen | Implemented; generated from Neo4j relationships |
+| Network Topology API and interactive graph screen | Implemented from bounded Neo4j projections with semantic layers, interface labels, risk colors, filtering, and relationship highlighting |
 | Asset relationship topology tab | Implemented; focuses the selected asset's neighborhood |
 | Provider-independent model boundary | Implemented; Ollama default with configurable compatible models |
 | LangGraph orchestrator | Compiles; model-driven reasoning and streaming are Phase 3 |
@@ -131,7 +138,10 @@ agent and application architecture does not need to change.
 
 ```bash
 cd backend && pytest
+cd frontend && npm test -- --run
 cd frontend && npm run build
 ```
 
-See `docs/roadmap/development-roadmap.md` for the next implementation phase.
+See `docs/security-findings-and-topology.md` for the delivered security
+operations behavior and `docs/roadmap/development-roadmap.md` for the next
+implementation phase.

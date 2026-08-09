@@ -39,6 +39,7 @@ NODE_ROWS = [
             "name": "ERP-PROD-DB01",
             "created_at": object(),
         },
+        "derived_risk_score": 82,
     },
     {
         "entity_key": "neo4j-2",
@@ -80,7 +81,9 @@ def test_topology_projection_normalizes_nodes_and_edges():
     assert {edge["type"] for edge in graph["edges"]} == {"OWNED_BY", "AFFECTS"}
     asset = next(node for node in graph["nodes"] if node["id"] == "asset-001")
     assert asset["label"] == "ERP-PROD-DB01"
+    assert asset["risk_level"] == "high"
     assert isinstance(asset["properties"]["created_at"], str)
+    assert {edge["category"] for edge in graph["edges"]} == {"identity", "risk"}
 
 
 def test_topology_projection_includes_entities_without_relationships():
@@ -104,4 +107,4 @@ def test_topology_projection_can_focus_an_asset_neighborhood():
 def test_topology_projection_returns_empty_for_unknown_focus():
     graph = topology_client().get_topology(focus_asset_id="asset-missing")
 
-    assert graph == {"nodes": [], "edges": []}
+    assert graph == {"nodes": [], "edges": [], "truncated": False}

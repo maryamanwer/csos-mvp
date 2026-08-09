@@ -45,6 +45,15 @@ const EMPTY_ASSET: AssetDraft = {
   environment: "production",
   criticality: "medium",
   owner: "",
+  hostname: "",
+  ip_address: "",
+  operating_system: "",
+  edr_status: "unknown",
+  edr_product: "",
+  edr_agent_version: "",
+  edr_agent_outdated: false,
+  managed_status: "unknown",
+  data_sources: [],
 };
 
 export const AssetInventoryPage = () => {
@@ -80,6 +89,15 @@ export const AssetInventoryPage = () => {
       environment: asset.environment,
       criticality: asset.criticality,
       owner: asset.owner ?? "",
+      hostname: asset.hostname ?? "",
+      ip_address: asset.ip_address ?? "",
+      operating_system: asset.operating_system ?? "",
+      edr_status: asset.edr_status ?? "unknown",
+      edr_product: asset.edr_product ?? "",
+      edr_agent_version: asset.edr_agent_version ?? "",
+      edr_agent_outdated: asset.edr_agent_outdated ?? false,
+      managed_status: asset.managed_status ?? "unknown",
+      data_sources: asset.data_sources ?? [],
     });
     setDialogOpen(true);
   };
@@ -155,10 +173,12 @@ export const AssetInventoryPage = () => {
             <TableRow>
               <TableCell>Name</TableCell>
               <TableCell>Type</TableCell>
+              <TableCell>Hostname / IP</TableCell>
               <TableCell>Owner</TableCell>
               <TableCell>Criticality</TableCell>
               <TableCell>Environment</TableCell>
               <TableCell>Risk Score</TableCell>
+              <TableCell>EDR</TableCell>
               {canWrite && <TableCell align="right">Actions</TableCell>}
             </TableRow>
           </TableHead>
@@ -167,10 +187,12 @@ export const AssetInventoryPage = () => {
               <TableRow key={asset.id} hover sx={{ cursor: "pointer" }} onClick={() => navigate(`/assets/${asset.id}`)}>
                 <TableCell>{asset.name}</TableCell>
                 <TableCell>{asset.type.replace(/_/g, " ")}</TableCell>
+                <TableCell><Typography variant="body2">{asset.hostname ?? "—"}</Typography><Typography variant="caption" color="text.secondary">{asset.ip_address ?? "IP not reported"}</Typography></TableCell>
                 <TableCell>{asset.owner ?? "—"}</TableCell>
                 <TableCell><Chip label={asset.criticality} sx={{ bgcolor: riskColor(asset.criticality), color: "#fff" }} size="small" /></TableCell>
                 <TableCell>{asset.environment}</TableCell>
                 <TableCell>{asset.risk_score ?? 0}</TableCell>
+                <TableCell><Chip size="small" label={(asset.edr_status ?? "unknown").replace(/_/g, " ")} color={asset.edr_status === "active" ? "success" : asset.edr_status === "outdated" ? "warning" : "default"} /></TableCell>
                 {canWrite && (
                   <TableCell align="right">
                     <Tooltip title="Edit asset"><IconButton onClick={(event) => { event.stopPropagation(); openEdit(asset); }}><EditIcon /></IconButton></Tooltip>
@@ -179,7 +201,7 @@ export const AssetInventoryPage = () => {
                 )}
               </TableRow>
             ))}
-            {assets.length === 0 && <TableRow><TableCell colSpan={canWrite ? 7 : 6}>No matching assets.</TableCell></TableRow>}
+            {assets.length === 0 && <TableRow><TableCell colSpan={canWrite ? 9 : 8}>No matching assets.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </TableContainer>
@@ -191,7 +213,9 @@ export const AssetInventoryPage = () => {
           <TextField select label="Type" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as AssetDraft["type"] })}>
             {[
               ["server", "Server"], ["application", "Application"], ["network_device", "Network device"],
-              ["database", "Database"], ["cloud_resource", "Cloud resource"],
+              ["router", "Router"], ["switch", "Switch"], ["firewall", "Firewall"],
+              ["database", "Database"], ["endpoint", "Endpoint"], ["workstation", "Workstation"],
+              ["cloud_resource", "Cloud resource"], ["other", "Other"],
             ].map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
           </TextField>
           <TextField label="Environment" value={draft.environment} onChange={(event) => setDraft({ ...draft, environment: event.target.value })} required />
@@ -199,6 +223,17 @@ export const AssetInventoryPage = () => {
             {["low", "medium", "high", "critical"].map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
           </TextField>
           <TextField label="Owner" value={draft.owner ?? ""} onChange={(event) => setDraft({ ...draft, owner: event.target.value })} />
+          <TextField label="Preferred hostname" value={draft.hostname ?? ""} onChange={(event) => setDraft({ ...draft, hostname: event.target.value })} />
+          <TextField label="IP address" value={draft.ip_address ?? ""} onChange={(event) => setDraft({ ...draft, ip_address: event.target.value })} />
+          <TextField label="Operating system" value={draft.operating_system ?? ""} onChange={(event) => setDraft({ ...draft, operating_system: event.target.value })} />
+          <TextField select label="EDR status" value={draft.edr_status ?? "unknown"} onChange={(event) => setDraft({ ...draft, edr_status: event.target.value as AssetDraft["edr_status"] })}>
+            {["active", "missing", "outdated", "not_applicable", "unknown"].map((value) => <MenuItem key={value} value={value}>{value.replace(/_/g, " ")}</MenuItem>)}
+          </TextField>
+          <TextField label="EDR product" value={draft.edr_product ?? ""} onChange={(event) => setDraft({ ...draft, edr_product: event.target.value })} />
+          <TextField select label="Management status" value={draft.managed_status ?? "unknown"} onChange={(event) => setDraft({ ...draft, managed_status: event.target.value as AssetDraft["managed_status"] })}>
+            {["managed", "unmanaged", "unknown"].map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+          </TextField>
+          <TextField label="Data sources (comma-separated)" value={(draft.data_sources ?? []).join(", ")} onChange={(event) => setDraft({ ...draft, data_sources: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>Cancel</Button>

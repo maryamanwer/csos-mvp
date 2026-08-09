@@ -77,11 +77,15 @@ async def import_vulnerabilities(
             asset_ids = row.pop("asset_ids", [])
             if isinstance(asset_ids, str):
                 asset_ids = [item.strip() for item in asset_ids.split(",") if item.strip()]
+            data_sources = row.get("data_sources", [])
+            if isinstance(data_sources, str):
+                data_sources = [item.strip() for item in data_sources.split(",") if item.strip()]
             normalized = {
                 **row,
                 "severity": str(row.get("severity", "")).strip().lower(),
                 "status": str(row.get("status", "open")).strip().lower(),
                 "asset_ids": asset_ids,
+                "data_sources": data_sources,
             }
             vulnerability = VulnerabilityCreate.model_validate(normalized)
             neo4j_client.create_vulnerability(

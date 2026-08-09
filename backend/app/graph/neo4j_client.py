@@ -15,12 +15,37 @@ class Neo4jClient:
         "Control",
         "Policy",
         "Framework",
+        "NetworkInterface",
+        "NetworkSegment",
     )
     ASSET_RELATIONSHIP_TYPES = {
         "CONNECTS_TO",
+        "CONNECTED_TO",
         "DEPENDS_ON",
         "HOSTS",
         "COMMUNICATES_WITH",
+        "PROTECTED_BY",
+        "CONNECTED_THROUGH",
+    }
+    NETWORK_RELATIONSHIPS = {
+        "CONNECTS_TO",
+        "CONNECTED_TO",
+        "COMMUNICATES_WITH",
+        "DEPENDS_ON",
+        "HOSTS",
+        "PROTECTED_BY",
+        "PROTECTS",
+        "CONNECTED_THROUGH",
+        "HAS_INTERFACE",
+        "LOCATED_IN",
+    }
+    VULNERABILITY_RELATIONSHIPS = {"HAS_VULNERABILITY", "CONTRIBUTES_TO"}
+    RISK_RELATIONSHIPS = {"AFFECTS", "HAS_RISK", "MITIGATES"}
+    IDENTITY_RELATIONSHIPS = {
+        "OWNED_BY",
+        "OWNS",
+        "HAS_ACCESS_TO",
+        "ASSOCIATED_WITH",
     }
 
     def __init__(self):
@@ -285,6 +310,300 @@ class Neo4jClient:
         )
         return bool(rows and rows[0]["found"])
 
+    # ---- Correlated security findings ----------------------------------
+    @staticmethod
+    def _findings_base_query() -> str:
+        return """
+        MATCH (asset:Asset)-[:HAS_VULNERABILITY]->(vulnerability:Vulnerability)
+        OPTIONAL MATCH (vulnerability)-[:CONTRIBUTES_TO]->(vulnerability_risk:Risk)
+        OPTIONAL MATCH (asset)<-[:AFFECTS]-(asset_risk:Risk)
+        WITH asset, vulnerability,
+             reduce(unique_risks = [], item IN
+                 collect(DISTINCT vulnerability_risk) + collect(DISTINCT asset_risk) |
+                 CASE WHEN item IS NULL OR item IN unique_risks THEN unique_risks
+                      ELSE unique_risks + item END) AS risks
+        OPTIONAL MATCH (asset_control:Control)-[:APPLIES_TO]->(asset)
+        OPTIONAL MATCH (risk_control:Control)-[:MITIGATES]->(related_risk:Risk)
+        WHERE related_risk IN risks
+        WITH asset, vulnerability, risks,
+             reduce(unique_controls = [], item IN
+                 collect(DISTINCT asset_control) + collect(DISTINCT risk_control) |
+                 CASE WHEN item IS NULL OR item IN unique_controls THEN unique_controls
+                      ELSE unique_controls + item END) AS controls,
+             reduce(max_score = 0.0, item IN risks |
+                 CASE WHEN toFloat(coalesce(item.score, 0)) > max_score
+                      THEN toFloat(coalesce(item.score, 0)) ELSE max_score END) AS linked_risk_score
+        WITH asset, vulnerability, risks, controls,
+             CASE WHEN linked_risk_score > 0 THEN linked_risk_score
+                  ELSE toFloat(coalesce(vulnerability.cvss_score, 0)) * 10 END AS risk_score
+        WITH asset, vulnerability, risks, controls, risk_score,
+             CASE WHEN risk_score >= 70 THEN 'high'
+                  WHEN risk_score >= 40 THEN 'medium' ELSE 'low' END AS risk_level,
+             CASE coalesce(vulnerability.status, 'open')
+                  WHEN 'accepted' THEN 'accepted_risk'
+                  WHEN 'mitigated' THEN 'resolved'
+                  WHEN 'false_positive' THEN 'resolved'
+                  ELSE coalesce(vulnerability.status, 'open') END AS finding_status,
+             CASE WHEN asset.edr_status = 'outdated'
+                            OR coalesce(asset.edr_agent_outdated, false) THEN 'outdated'
+                  WHEN asset.edr_status = 'active' THEN 'covered'
+                  ELSE 'missing' END AS edr_coverage,
+             reduce(sources = [], source IN
+                 coalesce(asset.data_sources, []) + coalesce(vulnerability.data_sources, []) |
+                 CASE WHEN source IN sources THEN sources ELSE sources + source END) AS data_sources
+        WITH asset, vulnerability, risks, controls, risk_score, risk_level,
+             finding_status, edr_coverage, data_sources,
+             CASE WHEN vulnerability.sla_due_at IS NULL THEN 'not_set'
+                  WHEN finding_status IN ['resolved', 'accepted_risk'] THEN 'completed'
+                  WHEN vulnerability.sla_due_at < datetime() THEN 'breached'
+                  ELSE 'within_sla' END AS sla_status
+        WHERE ($finding_id IS NULL OR vulnerability.id = $finding_id)
+          AND ($search IS NULL OR
+               toLower(coalesce(vulnerability.cve_id, '')) CONTAINS toLower($search) OR
+               toLower(vulnerability.title) CONTAINS toLower($search) OR
+               toLower(asset.name) CONTAINS toLower($search) OR
+               toLower(coalesce(asset.hostname, '')) CONTAINS toLower($search) OR
+               toLower(coalesce(asset.ip_address, '')) CONTAINS toLower($search) OR
+               toLower(coalesce(asset.owner, '')) CONTAINS toLower($search))
+          AND ($risk_level IS NULL OR risk_level = $risk_level)
+          AND ($criticality IS NULL OR asset.criticality = $criticality)
+          AND ($severity IS NULL OR vulnerability.severity = $severity)
+          AND ($edr_coverage IS NULL OR edr_coverage = $edr_coverage)
+          AND ($asset_type IS NULL OR asset.type = $asset_type)
+          AND ($owner IS NULL OR
+               toLower(coalesce(asset.owner, '')) CONTAINS toLower($owner))
+          AND ($status IS NULL OR finding_status = $status)
+          AND ($data_source IS NULL OR any(source IN data_sources
+               WHERE toLower(source) = toLower($data_source)))
+        """
+
+    @staticmethod
+    def _finding_params(**filters) -> dict:
+        return {
+            "finding_id": filters.get("finding_id"),
+            "search": filters.get("search"),
+            "risk_level": filters.get("risk_level"),
+            "criticality": filters.get("criticality"),
+            "severity": filters.get("severity"),
+            "edr_coverage": filters.get("edr_coverage"),
+            "asset_type": filters.get("asset_type"),
+            "owner": filters.get("owner"),
+            "status": filters.get("status"),
+            "data_source": filters.get("data_source"),
+        }
+
+    @staticmethod
+    def _finding_return_clause() -> str:
+        return """
+        RETURN vulnerability.id AS finding_id,
+               vulnerability.cve_id AS cve_id,
+               vulnerability.title AS title,
+               asset.id AS asset_id,
+               asset.name AS asset_name,
+               coalesce(asset.hostname, asset.name) AS preferred_hostname,
+               asset.type AS asset_type,
+               asset.criticality AS asset_criticality,
+               asset.owner AS asset_owner,
+               asset.ip_address AS ip_address,
+               asset.operating_system AS operating_system,
+               coalesce(asset.edr_status, 'unknown') AS edr_status,
+               asset.edr_product AS edr_product,
+               vulnerability.severity AS severity,
+               toFloat(coalesce(vulnerability.cvss_score, 0)) AS cvss_score,
+               risk_score, risk_level, finding_status AS status,
+               vulnerability.first_detected AS first_detected,
+               vulnerability.last_seen AS last_seen,
+               vulnerability.sla_due_at AS sla_due_at,
+               sla_status,
+               CASE WHEN vulnerability.sla_due_at IS NULL THEN null
+                    ELSE duration.inDays(datetime(), vulnerability.sla_due_at).days END
+                    AS sla_days_remaining,
+               data_sources,
+               vulnerability.recommended_remediation AS recommended_remediation,
+               [control IN controls | control{.id, .name, .status, .source}] AS controls
+        """
+
+    def list_security_findings(
+        self,
+        *,
+        search: str | None = None,
+        risk_level: str | None = None,
+        criticality: str | None = None,
+        severity: str | None = None,
+        edr_coverage: str | None = None,
+        asset_type: str | None = None,
+        owner: str | None = None,
+        status: str | None = None,
+        data_source: str | None = None,
+        sort_by: str = "risk_score",
+        sort_direction: str = "desc",
+        offset: int = 0,
+        limit: int = 50,
+    ) -> dict:
+        sort_fields = {
+            "finding_id": "coalesce(vulnerability.cve_id, vulnerability.id)",
+            "asset_name": "asset.name",
+            "asset_type": "asset.type",
+            "asset_criticality": "asset.criticality",
+            "asset_owner": "asset.owner",
+            "severity": "vulnerability.severity",
+            "cvss_score": "vulnerability.cvss_score",
+            "risk_score": "risk_score",
+            "risk_level": "risk_level",
+            "status": "finding_status",
+            "first_detected": "vulnerability.first_detected",
+            "last_seen": "vulnerability.last_seen",
+            "sla_due_at": "vulnerability.sla_due_at",
+        }
+        sort_expression = sort_fields.get(sort_by, "risk_score")
+        direction = "ASC" if sort_direction.lower() == "asc" else "DESC"
+        params = self._finding_params(
+            search=search,
+            risk_level=risk_level,
+            criticality=criticality,
+            severity=severity,
+            edr_coverage=edr_coverage,
+            asset_type=asset_type,
+            owner=owner,
+            status=status,
+            data_source=data_source,
+        )
+        count_rows = self.run(
+            self._findings_base_query() + " RETURN count(*) AS total",
+            params,
+        )
+        rows = self.run(
+            self._findings_base_query()
+            + self._finding_return_clause()
+            + f" ORDER BY {sort_expression} {direction} SKIP $offset LIMIT $limit",
+            {**params, "offset": offset, "limit": limit},
+        )
+        return {
+            "items": [self._json_safe(row) for row in rows],
+            "total": int(count_rows[0]["total"] if count_rows else 0),
+        }
+
+    def findings_summary(self) -> dict:
+        rows = self.run(
+            """
+            CALL {
+                MATCH (:Asset)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+                RETURN count(v) AS total_findings,
+                       sum(CASE WHEN v.severity = 'critical' THEN 1 ELSE 0 END)
+                           AS critical_findings,
+                       sum(CASE WHEN v.sla_due_at IS NOT NULL
+                                     AND v.sla_due_at < datetime()
+                                     AND NOT coalesce(v.status, 'open') IN
+                                         ['resolved', 'mitigated', 'accepted', 'accepted_risk']
+                                THEN 1 ELSE 0 END) AS sla_breaches
+            }
+            CALL {
+                MATCH (a:Asset)
+                WHERE a.criticality IN ['critical', 'high']
+                  AND coalesce(a.edr_status, 'missing') <> 'active'
+                RETURN count(a) AS critical_assets_without_edr
+            }
+            CALL {
+                MATCH (a:Asset)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+                WHERE a.criticality IN ['critical', 'high']
+                  AND v.severity IN ['critical', 'high']
+                RETURN count(v) AS critical_vulnerabilities_on_critical_assets
+            }
+            CALL {
+                MATCH (a:Asset)
+                WHERE a.edr_status = 'outdated'
+                   OR coalesce(a.edr_agent_outdated, false)
+                RETURN count(a) AS outdated_security_agents
+            }
+            CALL {
+                MATCH (a:Asset)
+                WHERE NOT EXISTS { MATCH (:Control)-[:APPLIES_TO]->(a) }
+                  AND NOT EXISTS {
+                      MATCH (:Control)-[:MITIGATES]->(:Risk)-[:AFFECTS]->(a)
+                  }
+                RETURN count(a) AS assets_missing_controls
+            }
+            CALL {
+                MATCH (a:Asset)
+                WHERE coalesce(a.managed_status, 'unknown') IN ['unknown', 'unmanaged']
+                RETURN count(a) AS unmanaged_assets
+            }
+            RETURN total_findings, critical_findings, sla_breaches,
+                   critical_assets_without_edr,
+                   critical_vulnerabilities_on_critical_assets,
+                   outdated_security_agents, assets_missing_controls, unmanaged_assets
+            """
+        )
+        return self._json_safe(rows[0] if rows else {})
+
+    def get_security_finding(self, finding_id: str, asset_id: str | None = None) -> dict | None:
+        params = self._finding_params(finding_id=finding_id)
+        rows = self.run(
+            self._findings_base_query()
+            + " AND ($asset_id IS NULL OR asset.id = $asset_id) "
+            + self._finding_return_clause()
+            + " LIMIT 1",
+            {**params, "asset_id": asset_id},
+        )
+        if not rows:
+            return None
+        finding = self._json_safe(rows[0])
+        context_rows = self.run(
+            """
+            MATCH (asset:Asset {id: $asset_id})-[:HAS_VULNERABILITY]->
+                  (vulnerability:Vulnerability {id: $finding_id})
+            OPTIONAL MATCH (vulnerability)-[:CONTRIBUTES_TO]->(risk:Risk)
+            OPTIONAL MATCH (asset)<-[:AFFECTS]-(asset_risk:Risk)
+            WITH asset, vulnerability,
+                 reduce(unique_risks = [], item IN
+                     collect(DISTINCT risk) + collect(DISTINCT asset_risk) |
+                     CASE WHEN item IS NULL OR item IN unique_risks THEN unique_risks
+                          ELSE unique_risks + item END) AS risks
+            OPTIONAL MATCH (asset_control:Control)-[:APPLIES_TO]->(asset)
+            OPTIONAL MATCH (risk_control:Control)-[:MITIGATES]->(related_risk:Risk)
+            WHERE related_risk IN risks
+            WITH asset, vulnerability, risks,
+                 reduce(unique_controls = [], item IN
+                     collect(DISTINCT asset_control) + collect(DISTINCT risk_control) |
+                     CASE WHEN item IS NULL OR item IN unique_controls
+                          THEN unique_controls ELSE unique_controls + item END) AS controls
+            OPTIONAL MATCH (asset)-[identity_rel:OWNED_BY|OWNS|HAS_ACCESS_TO|ASSOCIATED_WITH]-(identity:Identity)
+            OPTIONAL MATCH (asset)-[network_rel:CONNECTS_TO|CONNECTED_TO|COMMUNICATES_WITH|
+                           DEPENDS_ON|HOSTS|PROTECTED_BY|PROTECTS|CONNECTED_THROUGH]-(connected:Asset)
+            RETURN properties(asset) AS asset,
+                   collect(DISTINCT properties(identity)) AS owner_identities,
+                   [risk IN risks | properties(risk)] AS risks,
+                   [control IN controls | properties(control)] AS controls,
+                   collect(DISTINCT connected{.*, relationship: type(network_rel),
+                       relationship_properties: properties(network_rel)}) AS connected_assets
+            """,
+            {"finding_id": finding_id, "asset_id": finding["asset_id"]},
+        )
+        context = self._json_safe(context_rows[0] if context_rows else {})
+        risks = [item for item in context.get("risks", []) if item]
+        controls = [item for item in context.get("controls", []) if item]
+        identities = [item for item in context.get("owner_identities", []) if item]
+        chain = [
+            {"from": "Asset", "relationship": "OWNED_BY", "to": "Owner"},
+            {"from": "Asset", "relationship": "HAS_VULNERABILITY", "to": "Vulnerability"},
+        ]
+        if controls:
+            chain.append({"from": "Security Control", "relationship": "APPLIES_TO", "to": "Asset"})
+        if risks:
+            chain.append({"from": "Vulnerability", "relationship": "CONTRIBUTES_TO", "to": "Risk"})
+        chain.append({"from": "Risk", "relationship": "REQUIRES", "to": "Remediation"})
+        return {
+            "finding": finding,
+            "asset": context.get("asset") or {},
+            "owner_identities": identities,
+            "risks": risks,
+            "controls": controls,
+            "connected_assets": [
+                item for item in context.get("connected_assets", []) if item
+            ],
+            "relationship_chain": chain,
+        }
+
     # ---- Dashboard and risk --------------------------------------------
     def top_risks(self, limit: int = 5) -> list[dict]:
         return self.run(
@@ -409,22 +728,35 @@ class Neo4jClient:
     def get_topology(
         self,
         relationship_limit: int = 500,
+        node_limit: int = 1000,
         focus_asset_id: str | None = None,
     ) -> dict:
-        node_limit = min(relationship_limit * 2, 4000)
         node_rows = self.run(
             """
         MATCH (entity)
+        WHERE any(entity_label IN labels(entity)
+                  WHERE entity_label IN $supported_labels)
+        OPTIONAL MATCH (risk:Risk)-[:AFFECTS]->(entity)
+        OPTIONAL MATCH (entity)-[:HAS_VULNERABILITY]->(vulnerability:Vulnerability)
+        WITH entity,
+             max(toFloat(coalesce(risk.score, 0))) AS linked_risk_score,
+             max(toFloat(coalesce(vulnerability.cvss_score, 0)) * 10) AS vulnerability_score
         RETURN elementId(entity) AS entity_key,
                labels(entity) AS entity_labels,
-               properties(entity) AS entity_properties
+               properties(entity) AS entity_properties,
+               CASE WHEN linked_risk_score > vulnerability_score
+                    THEN linked_risk_score ELSE vulnerability_score END AS derived_risk_score
         LIMIT $limit
         """,
-            {"limit": node_limit},
+            {"limit": node_limit, "supported_labels": list(self.TOPOLOGY_LABELS)},
         )
         relationship_rows = self.run(
             """
         MATCH (source)-[relationship]->(target)
+        WHERE any(source_label IN labels(source)
+                  WHERE source_label IN $supported_labels)
+          AND any(target_label IN labels(target)
+                  WHERE target_label IN $supported_labels)
         RETURN elementId(source) AS source_key,
                labels(source) AS source_labels,
                properties(source) AS source_properties,
@@ -436,7 +768,10 @@ class Neo4jClient:
                properties(relationship) AS relationship_properties
         LIMIT $limit
         """,
-            {"limit": relationship_limit},
+            {
+                "limit": relationship_limit,
+                "supported_labels": list(self.TOPOLOGY_LABELS),
+            },
         )
 
         nodes: dict[str, dict] = {}
@@ -448,8 +783,13 @@ class Neo4jClient:
         for row in node_rows:
             if not supported_labels.intersection(row["entity_labels"]):
                 continue
+            properties = dict(row["entity_properties"])
+            if "Asset" in row["entity_labels"]:
+                risk_score = float(row.get("derived_risk_score") or 0)
+                properties["risk_score"] = risk_score
+                properties["risk_level"] = self._risk_level(risk_score)
             node = self._topology_node(
-                row["entity_key"], row["entity_labels"], row["entity_properties"]
+                row["entity_key"], row["entity_labels"], properties
             )
             nodes[node["id"]] = node
 
@@ -477,10 +817,22 @@ class Neo4jClient:
                 "source": source["id"],
                 "target": target["id"],
                 "type": row["relationship_type"],
+                "category": self._relationship_category(row["relationship_type"]),
+                "source_interface": (row.get("relationship_properties") or {}).get(
+                    "source_interface"
+                ),
+                "target_interface": (row.get("relationship_properties") or {}).get(
+                    "target_interface"
+                ),
                 "properties": self._json_safe(row.get("relationship_properties") or {}),
             }
 
-        graph = {"nodes": list(nodes.values()), "edges": list(edges.values())}
+        graph = {
+            "nodes": list(nodes.values()),
+            "edges": list(edges.values()),
+            "truncated": len(node_rows) >= node_limit
+            or len(relationship_rows) >= relationship_limit,
+        }
         if focus_asset_id:
             return self._focus_topology(graph, focus_asset_id)
         return graph
@@ -520,8 +872,34 @@ class Neo4jClient:
             "entity_id": str(entity_id) if entity_id is not None else None,
             "label": str(label),
             "type": node_type,
+            "asset_type": safe_properties.get("type") if node_type == "Asset" else None,
+            "risk_level": safe_properties.get("risk_level"),
+            "criticality": safe_properties.get("criticality"),
+            "ip_address": safe_properties.get("ip_address"),
             "properties": safe_properties,
         }
+
+    @staticmethod
+    def _risk_level(score: float) -> str:
+        if score >= 70:
+            return "high"
+        if score >= 40:
+            return "medium"
+        return "low"
+
+    @classmethod
+    def _relationship_category(cls, relationship_type: str) -> str:
+        if relationship_type in cls.NETWORK_RELATIONSHIPS:
+            return "network"
+        if relationship_type in cls.VULNERABILITY_RELATIONSHIPS:
+            return "vulnerability"
+        if relationship_type in cls.RISK_RELATIONSHIPS:
+            return "risk"
+        if relationship_type in cls.IDENTITY_RELATIONSHIPS:
+            return "identity"
+        if relationship_type in {"APPLIES_TO", "PART_OF", "DEFINES"}:
+            return "control"
+        return "other"
 
     @staticmethod
     def _focus_topology(graph: dict, focus_asset_id: str) -> dict:
@@ -531,7 +909,7 @@ class Neo4jClient:
             if node["id"] == focus_asset_id or node.get("entity_id") == focus_asset_id
         }
         if not focus_ids:
-            return {"nodes": [], "edges": []}
+            return {"nodes": [], "edges": [], "truncated": graph.get("truncated", False)}
 
         included_ids = set(focus_ids)
         for edge in graph["edges"]:
@@ -545,6 +923,7 @@ class Neo4jClient:
                 for edge in graph["edges"]
                 if edge["source"] in included_ids and edge["target"] in included_ids
             ],
+            "truncated": graph.get("truncated", False),
         }
 
     @classmethod

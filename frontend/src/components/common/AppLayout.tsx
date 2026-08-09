@@ -10,6 +10,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import BugReportIcon from "@mui/icons-material/BugReport";
+import FactCheckIcon from "@mui/icons-material/FactCheck";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -20,7 +21,8 @@ const NAV_ITEMS = [
   { label: "Analyst Dashboard", path: "/dashboard/analyst", icon: <DashboardIcon />, roles: ["Admin", "Analyst", "Engineer"] },
   { label: "Asset Inventory", path: "/assets", icon: <StorageIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
   { label: "Network Topology", path: "/topology", icon: <AccountTreeIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive", "ComplianceOfficer"] },
-  { label: "Vulnerabilities", path: "/vulnerabilities", icon: <BugReportIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
+  { label: "Security Findings", path: "/findings", icon: <FactCheckIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive", "ComplianceOfficer"] },
+  { label: "Vulnerability Repository", path: "/vulnerabilities", icon: <BugReportIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
   { label: "Risk Dashboard", path: "/risk", icon: <SecurityIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
   { label: "Compliance", path: "/compliance", icon: <PolicyIcon />, roles: ["Admin", "ComplianceOfficer", "Executive"] },
   { label: "AI Chat Assistant", path: "/chat", icon: <ChatIcon />, roles: ["Admin", "Analyst", "Engineer", "ComplianceOfficer", "Executive"] },
