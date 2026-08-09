@@ -117,6 +117,9 @@ MERGE (c1:Control {id: 'control-a12'})
   SET c1.name = 'Cryptographic controls', c1.description = 'Use strong TLS/cipher configurations',
       c1.source = 'ISO27001', c1.status = 'implemented';
 
+MATCH (a1:Asset {id: 'asset-001'}), (i1:Identity {id: 'identity-001'}),
+      (v1:Vulnerability {id: 'vuln-001'}), (r1:Risk {id: 'risk-001'}),
+      (f1:Framework {id: 'framework-iso27001'}), (c1:Control {id: 'control-a12'})
 MERGE (a1)-[:OWNED_BY]->(i1)
 MERGE (a1)-[:HAS_VULNERABILITY]->(v1)
 MERGE (v1)-[:CONTRIBUTES_TO]->(r1)
@@ -216,6 +219,18 @@ MERGE (c4:Control {id: 'control-a8'})
   SET c4.name = 'Asset lifecycle management', c4.description = 'Maintain accountable asset ownership',
       c4.source = 'ISO27001', c4.status = 'implemented';
 
+MATCH (a1:Asset {id: 'asset-001'}), (a2:Asset {id: 'asset-002'}),
+      (a3:Asset {id: 'asset-003'}), (a4:Asset {id: 'asset-004'}),
+      (a5:Asset {id: 'asset-005'}),
+      (v2:Vulnerability {id: 'vuln-002'}), (v3:Vulnerability {id: 'vuln-003'}),
+      (v4:Vulnerability {id: 'vuln-004'}),
+      (r2:Risk {id: 'risk-002'}), (r3:Risk {id: 'risk-003'}),
+      (r4:Risk {id: 'risk-004'}),
+      (f1:Framework {id: 'framework-iso27001'}),
+      (f2:Framework {id: 'framework-nist-csf'}),
+      (c2:Control {id: 'control-pr-ip-01'}),
+      (c3:Control {id: 'control-pr-ac-01'}),
+      (c4:Control {id: 'control-a8'})
 MERGE (a2)-[:HAS_VULNERABILITY]->(v2)
 MERGE (a3)-[:HAS_VULNERABILITY]->(v3)
 MERGE (a4)-[:HAS_VULNERABILITY]->(v4)
@@ -335,6 +350,20 @@ MERGE (if_user:NetworkInterface {id: 'if-user-eth0'})
 MATCH (db:Asset {id: 'asset-001'}), (firewall:Asset {id: 'asset-003'}),
       (core:Asset {id: 'asset-006'}), (web:Asset {id: 'asset-007'}),
       (app:Asset {id: 'asset-008'}), (endpoint:Asset {id: 'asset-009'})
+MATCH (if_fw_wan:NetworkInterface {id: 'if-fw-wan'}),
+      (if_fw_lan:NetworkInterface {id: 'if-fw-lan'}),
+      (if_sw_uplink:NetworkInterface {id: 'if-sw-uplink'}),
+      (if_web:NetworkInterface {id: 'if-web-eth0'}),
+      (if_app:NetworkInterface {id: 'if-app-eth0'}),
+      (if_db:NetworkInterface {id: 'if-db-eth0'}),
+      (if_user:NetworkInterface {id: 'if-user-eth0'})
+MATCH (internet:NetworkSegment {id: 'segment-internet'}),
+      (dmz:NetworkSegment {id: 'segment-dmz'}),
+      (app_zone:NetworkSegment {id: 'segment-app'}),
+      (data_zone:NetworkSegment {id: 'segment-data'}),
+      (user_zone:NetworkSegment {id: 'segment-user'})
+MATCH (v5:Vulnerability {id: 'vuln-005'}), (r5:Risk {id: 'risk-005'}),
+      (c5:Control {id: 'control-web-waf'}), (i2:Identity {id: 'identity-002'})
 MERGE (firewall)-[:HAS_INTERFACE]->(if_fw_wan)
 MERGE (firewall)-[:HAS_INTERFACE]->(if_fw_lan)
 MERGE (core)-[:HAS_INTERFACE]->(if_sw_uplink)
