@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { layoutNodes, RISK_COLORS } from "./TopologyGraph";
+import { layoutNodes, layoutTopologyGraph, resolveNodeRiskLevel, RISK_COLORS } from "./TopologyGraph";
 import { TopologyNode } from "@/types";
 import { filterTopologyGraph } from "@/pages/NetworkTopologyPage";
 
@@ -34,6 +34,34 @@ describe("CSOS topology presentation", () => {
     expect(positions.get("switch")!.y).toBeLessThan(positions.get("web")!.y);
     expect(positions.get("web")!.y).toBeLessThan(positions.get("cve")!.y);
     expect(positions.get("cve")!.y).toBeLessThan(positions.get("risk")!.y);
+  });
+
+  it("groups assets into their stored network zones without overlapping", () => {
+    const internet = node("internet", "NetworkSegment");
+    const dmz = node("dmz", "NetworkSegment");
+    const firewall = { ...node("firewall", "Asset", "firewall"), criticality: "critical" };
+    const web = { ...node("web", "Asset", "server"), criticality: "high" };
+    const wan = node("wan", "NetworkInterface");
+    const eth0 = node("eth0", "NetworkInterface");
+    const layout = layoutTopologyGraph({
+      nodes: [internet, dmz, firewall, web, wan, eth0],
+      edges: [
+        { id: "fw-if", source: "firewall", target: "wan", type: "HAS_INTERFACE", category: "network", properties: {} },
+        { id: "wan-zone", source: "wan", target: "internet", type: "LOCATED_IN", category: "network", properties: {} },
+        { id: "web-if", source: "web", target: "eth0", type: "HAS_INTERFACE", category: "network", properties: {} },
+        { id: "eth-zone", source: "eth0", target: "dmz", type: "LOCATED_IN", category: "network", properties: {} },
+      ],
+    });
+
+    expect(layout.zones.map((zone) => zone.label)).toEqual(["internet", "dmz"]);
+    expect(layout.positions.get("firewall")!.x).not.toBe(layout.positions.get("web")!.x);
+    expect(layout.positions.get("wan")!.y).toBeLessThan(layout.positions.get("web")!.y);
+  });
+
+  it("falls back to asset criticality when a risk score is not available", () => {
+    expect(resolveNodeRiskLevel({ ...node("critical", "Asset", "server"), criticality: "critical" })).toBe("high");
+    expect(resolveNodeRiskLevel({ ...node("medium", "Asset", "server"), criticality: "medium" })).toBe("medium");
+    expect(resolveNodeRiskLevel(node("unknown", "Asset", "server"))).toBe("unknown");
   });
 
   it("filters assets while preserving their directly connected security context", () => {

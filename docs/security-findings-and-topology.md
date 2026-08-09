@@ -45,21 +45,28 @@ No live MCP connector is claimed in this delivery.
 ## Network and security topology
 
 `/topology` requests a bounded graph from Neo4j and arranges stored nodes in
-semantic layers rather than a circular layout. The demonstration path is:
+professional network zones rather than a circular layout. Segment membership
+is derived from `HAS_INTERFACE` and `LOCATED_IN` relationships, while connected
+assets without direct interface metadata inherit the nearest stored zone. The
+demonstration path is:
 
 ```text
 Internet → Firewall → Core Switch → Web Server → Application Server → Database
 ```
 
 The same view includes stored network interfaces, IP addresses, VLAN/subnet
-metadata, vulnerabilities, risks, identities, and controls. Edge labels show
-interface and protocol/port details only when they exist in Neo4j.
+metadata, vulnerabilities, risks, identities, and controls. Curved routed
+connections reduce visual collisions, and edge labels are limited to primary
+network paths or the selected relationship. Interface and protocol/port details
+are shown only when they exist in Neo4j.
 
 The topology provides pan, zoom, fit-to-screen, search, entity/risk/environment/
 relationship filters, node and edge selection, tooltips, relationship legends,
 and a details panel. Selecting an entity highlights its direct neighborhood and
 dims unrelated nodes and edges. Asset risk uses the highest related risk/CVSS
-for its primary visual state:
+for its primary visual state. If an imported asset has not yet been correlated
+to a finding, its criticality is used as a conservative visual fallback rather
+than incorrectly showing it as low risk:
 
 - High: red
 - Medium: orange

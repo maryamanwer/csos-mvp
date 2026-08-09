@@ -19,12 +19,11 @@ import {
   Typography,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import { TopologyGraph as TopologyGraphView } from "@/components/topology/TopologyGraph";
+import { RISK_COLORS, resolveNodeRiskLevel, TopologyGraph as TopologyGraphView } from "@/components/topology/TopologyGraph";
 import { getTopology } from "@/services/api";
 import { TopologyEdge, TopologyGraph, TopologyNode } from "@/types";
 
 const EMPTY_GRAPH: TopologyGraph = { nodes: [], edges: [], truncated: false };
-const RISK_COLORS = { high: "#D92D20", medium: "#F79009", low: "#12B76A" };
 const RELATIONSHIP_COLORS = {
   network: "#344054",
   vulnerability: "#D92D20",
@@ -58,7 +57,7 @@ export const filterTopologyGraph = (
     const searchMatch = !term || searchable.includes(term);
     if (node.type === "Asset") {
       const assetMatch = (assetType === "all" || node.asset_type === assetType)
-        && (riskLevel === "all" || node.risk_level === riskLevel)
+        && (riskLevel === "all" || resolveNodeRiskLevel(node) === riskLevel)
         && (environment === "all" || node.properties.environment === environment);
       if (assetMatch && searchMatch) seedIds.add(node.id);
     } else if (!filteringAssets && searchMatch) seedIds.add(node.id);
@@ -182,13 +181,13 @@ export const NetworkTopologyPage = () => {
           <TopologyGraphView graph={filteredGraph} selectedNodeId={selectedNode?.id} selectedEdgeId={selectedEdge?.id} onSelectNode={selectNode} onSelectEdge={selectEdge} />
         </Grid>
         {(selectedNode || selectedEdge) && <Grid item xs={12} lg={3}>
-          <Card variant="outlined" sx={{ height: 760, overflow: "auto" }}>
+          <Card variant="outlined" sx={{ height: 820, overflow: "auto" }}>
             <CardContent>
               {selectedNode && <Stack spacing={2}>
                 <Box>
                   <Typography variant="overline" color="text.secondary">{selectedNode.type}</Typography>
                   <Typography variant="h6" fontWeight={700}>{selectedNode.label}</Typography>
-                  {selectedNode.type === "Asset" && <Stack direction="row" spacing={1} sx={{ mt: 1 }}><Chip size="small" label={`${selectedNode.risk_level ?? "low"} risk`} sx={{ bgcolor: RISK_COLORS[selectedNode.risk_level ?? "low"], color: "white" }} /><Chip size="small" variant="outlined" label={selectedNode.criticality ?? "unknown criticality"} /></Stack>}
+                  {selectedNode.type === "Asset" && <Stack direction="row" spacing={1} sx={{ mt: 1 }}><Chip size="small" label={`${resolveNodeRiskLevel(selectedNode)} risk`} sx={{ bgcolor: RISK_COLORS[resolveNodeRiskLevel(selectedNode)], color: "white" }} /><Chip size="small" variant="outlined" label={selectedNode.criticality ?? "unknown criticality"} /></Stack>}
                 </Box>
                 <Divider />
                 <Box><Typography fontWeight={700}>Asset information</Typography>{["name", "hostname", "ip_address", "type", "environment", "criticality", "owner", "operating_system", "edr_status", "edr_product"].filter((key) => selectedNode.properties[key] !== undefined).map((key) => <Box key={key} sx={{ mt: 0.75 }}><Typography variant="caption" color="text.secondary">{key.replace(/_/g, " ")}</Typography><Typography variant="body2">{valueText(selectedNode.properties[key])}</Typography></Box>)}</Box>

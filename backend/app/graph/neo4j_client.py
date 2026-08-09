@@ -786,6 +786,13 @@ class Neo4jClient:
             properties = dict(row["entity_properties"])
             if "Asset" in row["entity_labels"]:
                 risk_score = float(row.get("derived_risk_score") or 0)
+                if risk_score <= 0:
+                    risk_score = {
+                        "critical": 90.0,
+                        "high": 75.0,
+                        "medium": 50.0,
+                        "low": 20.0,
+                    }.get(str(properties.get("criticality") or "").lower(), 0.0)
                 properties["risk_score"] = risk_score
                 properties["risk_level"] = self._risk_level(risk_score)
             node = self._topology_node(

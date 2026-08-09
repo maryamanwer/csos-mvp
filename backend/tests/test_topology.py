@@ -108,3 +108,29 @@ def test_topology_projection_returns_empty_for_unknown_focus():
     graph = topology_client().get_topology(focus_asset_id="asset-missing")
 
     assert graph == {"nodes": [], "edges": [], "truncated": False}
+
+
+def test_topology_uses_asset_criticality_when_linked_risk_is_missing():
+    client = Neo4jClient.__new__(Neo4jClient)
+    node_rows = [
+        {
+            "entity_key": "neo4j-critical",
+            "entity_labels": ["Asset"],
+            "entity_properties": {
+                "id": "asset-critical",
+                "name": "PAYMENTS-DB",
+                "criticality": "critical",
+            },
+            "derived_risk_score": 0,
+        }
+    ]
+
+    def run(query, parameters=None):
+        return node_rows if "MATCH (entity)" in query else []
+
+    client.run = run  # type: ignore[method-assign]
+    graph = client.get_topology()
+    asset = graph["nodes"][0]
+
+    assert asset["risk_level"] == "high"
+    assert asset["properties"]["risk_score"] == 90.0
