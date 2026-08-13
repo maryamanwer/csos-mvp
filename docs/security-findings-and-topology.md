@@ -44,8 +44,11 @@ No live MCP connector is claimed in this delivery.
 
 ## Network and security topology
 
-`/topology` requests a bounded graph from Neo4j and arranges stored nodes in
-professional network zones rather than a circular layout. Segment membership
+`/topology` requests a bounded graph from Neo4j and arranges stored nodes in a
+Visio-style network map rather than a circular layout. The default view focuses
+on the operational network path with recognizable device glyphs, subnet zones,
+interface names on the relevant connectors, orthogonal routing, and readable
+asset labels. Segment membership
 is derived from `HAS_INTERFACE` and `LOCATED_IN` relationships, while connected
 assets without direct interface metadata inherit the nearest stored zone. The
 demonstration path is:
@@ -54,11 +57,12 @@ demonstration path is:
 Internet → Firewall → Core Switch → Web Server → Application Server → Database
 ```
 
-The same view includes stored network interfaces, IP addresses, VLAN/subnet
-metadata, vulnerabilities, risks, identities, and controls. Curved routed
-connections reduce visual collisions, and edge labels are limited to primary
-network paths or the selected relationship. Interface and protocol/port details
-are shown only when they exist in Neo4j.
+The optional security overlay adds stored vulnerabilities, risks, identities,
+controls, policies, and frameworks without crowding the default network map.
+Orthogonal network connectors and routed overlay connections reduce visual
+collisions, while edge labels are limited to primary network paths or the
+selected relationship. Interface and protocol/port details are shown only when
+they exist in Neo4j.
 
 The topology provides pan, zoom, fit-to-screen, search, entity/risk/environment/
 relationship filters, node and edge selection, tooltips, relationship legends,

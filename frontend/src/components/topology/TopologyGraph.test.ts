@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { layoutNodes, layoutTopologyGraph, resolveNodeRiskLevel, RISK_COLORS } from "./TopologyGraph";
+import { layoutNodes, layoutTopologyGraph, resolveNodeRiskLevel, RISK_COLORS, topologyGlyph } from "./TopologyGraph";
 import { TopologyNode } from "@/types";
 import { filterTopologyGraph } from "@/pages/NetworkTopologyPage";
 
@@ -19,7 +19,7 @@ describe("CSOS topology presentation", () => {
     expect(RISK_COLORS.low).toBe("#12B76A");
   });
 
-  it("places network and security entities into semantic layers instead of a circle", () => {
+  it("places the perimeter path before the separate security overlay", () => {
     const positions = layoutNodes([
       node("internet", "NetworkSegment"),
       node("firewall", "Asset", "firewall"),
@@ -29,10 +29,10 @@ describe("CSOS topology presentation", () => {
       node("risk", "Risk"),
     ]);
 
-    expect(positions.get("internet")!.y).toBeLessThan(positions.get("firewall")!.y);
+    expect(positions.get("internet")!.x).toBeLessThan(positions.get("firewall")!.x);
     expect(positions.get("firewall")!.y).toBeLessThan(positions.get("switch")!.y);
-    expect(positions.get("switch")!.y).toBeLessThan(positions.get("web")!.y);
     expect(positions.get("web")!.y).toBeLessThan(positions.get("cve")!.y);
+    expect(positions.get("switch")!.y).toBeLessThan(positions.get("cve")!.y);
     expect(positions.get("cve")!.y).toBeLessThan(positions.get("risk")!.y);
   });
 
@@ -53,9 +53,32 @@ describe("CSOS topology presentation", () => {
       ],
     });
 
-    expect(layout.zones.map((zone) => zone.label)).toEqual(["internet", "dmz"]);
+    expect(layout.zones.map((zone) => zone.label)).toEqual(["Internet Edge & Core", "dmz"]);
     expect(layout.positions.get("firewall")!.x).not.toBe(layout.positions.get("web")!.x);
-    expect(layout.positions.get("wan")!.y).toBeLessThan(layout.positions.get("web")!.y);
+    expect(layout.positions.has("wan")).toBe(false);
+    expect(layout.positions.has("eth0")).toBe(false);
+  });
+
+  it("uses recognizable Visio-style glyphs for network and workload assets", () => {
+    expect(topologyGlyph(node("edge", "Asset", "firewall"))).toBe("firewall");
+    expect(topologyGlyph(node("core", "Asset", "switch"))).toBe("switch");
+    expect(topologyGlyph(node("db", "Asset", "database"))).toBe("database");
+    expect(topologyGlyph(node("pc", "Asset", "workstation"))).toBe("endpoint");
+  });
+
+  it("keeps the default network map compact when the security overlay is hidden", () => {
+    const graph = {
+      nodes: [node("internet", "NetworkSegment"), node("firewall", "Asset", "firewall"), node("finding", "Vulnerability")],
+      edges: [
+        { id: "finding-edge", source: "firewall", target: "finding", type: "HAS_VULNERABILITY", category: "vulnerability" as const, properties: {} },
+      ],
+    };
+    const networkOnly = layoutTopologyGraph(graph, false);
+    const withOverlay = layoutTopologyGraph(graph, true);
+
+    expect(networkOnly.positions.has("finding")).toBe(false);
+    expect(withOverlay.positions.has("finding")).toBe(true);
+    expect(networkOnly.height).toBeLessThan(withOverlay.height);
   });
 
   it("falls back to asset criticality when a risk score is not available", () => {

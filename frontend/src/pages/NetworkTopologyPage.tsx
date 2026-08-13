@@ -153,7 +153,7 @@ export const NetworkTopologyPage = () => {
       <Stack direction={{ xs: "column", lg: "row" }} justifyContent="space-between" spacing={2} sx={{ mb: 2 }}>
         <Box>
           <Typography variant="h4" fontWeight={700}>Cyber Knowledge Graph Topology</Typography>
-          <Typography color="text.secondary">Network paths, interfaces, vulnerabilities, risks, identities, and controls from actual CSOS relationships.</Typography>
+          <Typography color="text.secondary">Visio-style network zones and paths generated from Neo4j, with an optional Cyber Knowledge Graph security overlay.</Typography>
         </Box>
         <Button startIcon={<RefreshIcon />} variant="outlined" onClick={() => void loadTopology()} disabled={loading}>Refresh Graph</Button>
       </Stack>
