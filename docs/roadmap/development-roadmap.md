@@ -23,18 +23,23 @@
 - [x] Asset Inventory CRUD, classification, and CSV/Excel import
 - [x] Asset relationship management in Neo4j
 - [x] Vulnerability Repository CRUD and import
+- [x] Correlated Security Findings dashboard, advanced filters, export, saved views, and drill-down
+- [x] Security-gap KPIs for EDR, critical exposure, controls, unmanaged assets, and SLA breaches
+- [x] Interface-aware layered topology with network, vulnerability, risk, identity, and control relationships
 - [x] OpenAPI-documented service completion for the above
 
 ## Implementation Phase 3 – AI & Knowledge Graph Intelligence
 
-- [ ] Complete domain model persistence in Neo4j
-- [ ] Advanced graph queries and path exploration
+- [x] Add authenticated MCP Gateway with approved CSOS tools and resources
+- [x] Reuse CSOS JWT identity and enforce existing FastAPI RBAC on MCP tool calls
+- [ ] Extend normalized domain persistence for live enterprise connector payloads
+- [ ] Advanced multi-hop attack-path queries and path comparison
 - [ ] Complete LangGraph Orchestrator routing
 - [ ] Complete Asset Intelligence, Risk Assessment, and Compliance Agents
 - [ ] Stream AI Chat responses with grounded citations and agent traces
 - [ ] Ollama lifecycle, health checks, and model-management UI
 - [ ] Validate configured Llama, DeepSeek, Qwen, Mistral, ALLAM, and compatible sovereign models
-- [ ] Add live connectors through the common connector interface
+- [ ] Configure live EDR/XDR, SIEM, CMDB, identity, cloud, firewall, and patch adapters
 
 ## Implementation Phase 4 – Platform Completion & Delivery
 

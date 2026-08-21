@@ -2,8 +2,23 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-AssetType = Literal["server", "application", "network_device", "database", "cloud_resource"]
+AssetType = Literal[
+    "server",
+    "application",
+    "network_device",
+    "router",
+    "switch",
+    "firewall",
+    "database",
+    "endpoint",
+    "workstation",
+    "cloud_resource",
+    "cloud",
+    "other",
+]
 Criticality = Literal["low", "medium", "high", "critical"]
+EdrStatus = Literal["active", "missing", "outdated", "not_applicable", "unknown"]
+ManagedStatus = Literal["managed", "unmanaged", "unknown"]
 
 
 class AssetCreate(BaseModel):
@@ -12,7 +27,15 @@ class AssetCreate(BaseModel):
     environment: str = Field(min_length=2, max_length=100)
     criticality: Criticality
     owner: Optional[str] = Field(default=None, max_length=255)
+    hostname: Optional[str] = Field(default=None, max_length=255)
     ip_address: Optional[str] = Field(default=None, max_length=64)
+    operating_system: Optional[str] = Field(default=None, max_length=255)
+    edr_status: EdrStatus = "unknown"
+    edr_product: Optional[str] = Field(default=None, max_length=255)
+    edr_agent_version: Optional[str] = Field(default=None, max_length=100)
+    edr_agent_outdated: bool = False
+    managed_status: ManagedStatus = "unknown"
+    data_sources: list[str] = Field(default_factory=list)
     description: Optional[str] = Field(default=None, max_length=2000)
 
 
@@ -22,7 +45,15 @@ class AssetUpdate(BaseModel):
     environment: str | None = Field(default=None, min_length=2, max_length=100)
     criticality: Criticality | None = None
     owner: str | None = Field(default=None, max_length=255)
+    hostname: str | None = Field(default=None, max_length=255)
     ip_address: str | None = Field(default=None, max_length=64)
+    operating_system: str | None = Field(default=None, max_length=255)
+    edr_status: EdrStatus | None = None
+    edr_product: str | None = Field(default=None, max_length=255)
+    edr_agent_version: str | None = Field(default=None, max_length=100)
+    edr_agent_outdated: bool | None = None
+    managed_status: ManagedStatus | None = None
+    data_sources: list[str] | None = None
     description: str | None = Field(default=None, max_length=2000)
 
 
@@ -43,9 +74,12 @@ class AssetRelationshipCreate(BaseModel):
     target_id: str
     relationship_type: Literal[
         "CONNECTS_TO",
+        "CONNECTED_TO",
         "DEPENDS_ON",
         "HOSTS",
         "COMMUNICATES_WITH",
+        "PROTECTED_BY",
+        "CONNECTED_THROUGH",
     ]
     properties: dict = Field(default_factory=dict)
 

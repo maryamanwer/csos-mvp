@@ -79,12 +79,33 @@ services:
       timeout: 5s
       retries: 12
 
+  mcp-gateway:
+    build: ./mcp-gateway
+    env_file: ./mcp-gateway/.env.example
+    environment:
+      MCP_BACKEND_URL: http://backend:8000/api/v1
+      MCP_JWT_SECRET_KEY: change-me-in-production-32-bytes-minimum
+      MCP_JWT_ISSUER: csos-auth
+      MCP_JWT_AUDIENCE: csos-mcp
+    ports:
+      - "8001:8001"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   frontend:
     build: ./frontend
     ports:
       - "3000:80"
     depends_on:
       backend:
+        condition: service_healthy
+      mcp-gateway:
         condition: service_healthy
 
 volumes:

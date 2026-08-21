@@ -15,11 +15,13 @@ def get_topology(
         description="Return the selected asset and its directly connected entities.",
     ),
     relationship_limit: int = Query(default=500, ge=1, le=2000),
+    node_limit: int = Query(default=1000, ge=1, le=4000),
     user: dict = Depends(
         require_role("Admin", "Analyst", "Engineer", "Executive", "ComplianceOfficer")
     ),
 ):
     return neo4j_client.get_topology(
         relationship_limit=relationship_limit,
+        node_limit=node_limit,
         focus_asset_id=focus_asset_id,
     )

@@ -10,9 +10,9 @@ the platform architecture and implementation roadmap.
 
 | Role | Description | Primary Screens |
 |---|---|---|
-| CISO / Executive | Strategic oversight, KPIs, risk trends | Executive Dashboard, Network Topology, Reports |
-| Security Architect | Designs controls and reviews relationships | Asset Inventory, Network Topology, Knowledge Graph |
-| Security Analyst | Investigates, triages, responds | Analyst Dashboard, Interactive Topology, AI Chat |
+| CISO / Executive | Strategic oversight, KPIs, risk trends | Executive Dashboard, Security Findings, Network Topology, Reports |
+| Security Architect | Designs controls and reviews relationships | Asset Inventory, Security Findings, Network Topology, Knowledge Graph |
+| Security Analyst | Investigates, triages, responds | Analyst Dashboard, Security Findings, Interactive Topology, AI Chat |
 | Security Engineer | Implements controls and manages assets | Asset Inventory, Asset Details, Network Topology |
 | Compliance Officer | Manages frameworks and audits | Compliance Dashboard, Custom Standards, Topology |
 | Administrator | Manages users, roles, and system settings | Administration Portal |
@@ -64,12 +64,23 @@ the platform architecture and implementation roadmap.
 - FR-9.3 Support pan, zoom, search, entity-type filtering, node selection, and relationship exploration.
 - FR-9.4 Provide a full topology workspace and an asset-centered relationship view.
 - FR-9.5 Do not require live network discovery; live discovery and topology synchronization are future integration capabilities.
+- FR-9.6 Represent stored interface names, addresses, VLANs, subnets, and edge protocol/port metadata without inventing unavailable values.
+- FR-9.7 Use the highest related asset risk for the primary red/high, orange/medium, or green/low visual state while preserving detailed risks.
+- FR-9.8 Highlight a selected entity's direct investigation neighborhood and dim unrelated graph elements.
 
 ### FR-10 Reporting
 - FR-10.1 Generate PDF/Excel exports for risk, compliance, and asset reports.
 
 ### FR-11 Administration
 - FR-11.1 Provide user management, role assignment, audit logs, and system settings.
+
+### FR-12 Correlated Security Findings
+- FR-12.1 Present one unified asset/finding view with CVE, asset identity and ownership, IP/OS, EDR coverage, severity/CVSS, risk, status, detection dates, SLA, data sources, and remediation.
+- FR-12.2 Support search, multi-dimensional advanced filters, sortable columns, pagination, saved views, and bounded CSV export.
+- FR-12.3 Provide finding drill-down across Asset → Owner → Vulnerability → Security Controls → Risk → Remediation and link to the asset record.
+- FR-12.4 Identify critical assets without EDR, critical vulnerabilities on critical assets, outdated agents, missing controls, unknown assets, and overdue findings.
+- FR-12.5 Correlate normalized observations across available source adapters instead of presenting unrelated duplicate tool records.
+- FR-12.6 Keep the query and UI contracts extensible for authorized AI agents, an MCP integration gateway, and additional Cyber Knowledge Graph connectors.
 
 ## 4. Non-Functional Requirements
 
@@ -80,6 +91,7 @@ the platform architecture and implementation roadmap.
 - NFR-5 Keep the codebase extensible so models, providers, agents, connectors, and visual entity types can be added without core rewrites.
 - NFR-6 Keep graph responses bounded and validate all externally supplied query parameters.
 - NFR-7 Provide automated tests for the core application scaffold and topology projection.
+- NFR-8 Apply server-side pagination, bounded exports, allow-listed sorting, and bounded graph projections to security-operations views.
 
 ## 5. Planned Beyond the Core Platform
 

@@ -168,14 +168,19 @@ def test_topology_endpoint_returns_graph(client, admin_headers, monkeypatch):
                 "entity_id": "asset-001",
                 "label": "ERP-PROD-DB01",
                 "type": "Asset",
+                "asset_type": "database",
+                "risk_level": "high",
+                "criticality": "critical",
+                "ip_address": "10.20.30.20",
                 "properties": {"id": "asset-001", "name": "ERP-PROD-DB01"},
             }
         ],
         "edges": [],
+        "truncated": False,
     }
     monkeypatch.setattr(
         "app.api.v1.topology.neo4j_client.get_topology",
-        lambda relationship_limit, focus_asset_id: expected,
+        lambda relationship_limit, node_limit, focus_asset_id: expected,
     )
 
     response = client.get("/api/v1/topology", headers=admin_headers)
@@ -186,5 +191,88 @@ def test_topology_endpoint_returns_graph(client, admin_headers, monkeypatch):
 
 def test_topology_endpoint_requires_authentication(client):
     response = client.get("/api/v1/topology")
+
+    assert response.status_code == 401
+
+
+def test_security_findings_endpoint_returns_correlated_page(client, admin_headers, monkeypatch):
+    finding = {
+        "finding_id": "vuln-001",
+        "cve_id": "CVE-2026-4102",
+        "title": "Internet-facing web service remote execution",
+        "asset_id": "asset-007",
+        "asset_name": "WEB-PROD-01",
+        "preferred_hostname": "web-prod-01.csos.demo",
+        "asset_type": "server",
+        "asset_criticality": "high",
+        "asset_owner": "Digital Services",
+        "ip_address": "10.20.10.11",
+        "operating_system": "Ubuntu Server 24.04",
+        "edr_status": "active",
+        "edr_product": "CSOS Endpoint Sensor",
+        "severity": "critical",
+        "cvss_score": 9.8,
+        "risk_score": 96,
+        "risk_level": "high",
+        "status": "open",
+        "first_detected": "2026-08-01T03:45:00Z",
+        "last_seen": "2026-08-09T02:10:00Z",
+        "sla_due_at": "2026-08-08T00:00:00Z",
+        "sla_status": "breached",
+        "sla_days_remaining": -1,
+        "data_sources": ["Vulnerability Management", "EDR / XDR"],
+        "recommended_remediation": "Apply the vendor security update.",
+        "controls": [],
+    }
+    summary = {
+        "total_findings": 1,
+        "critical_findings": 1,
+        "sla_breaches": 1,
+        "critical_assets_without_edr": 0,
+        "critical_vulnerabilities_on_critical_assets": 1,
+        "outdated_security_agents": 0,
+        "assets_missing_controls": 0,
+        "unmanaged_assets": 0,
+    }
+    captured = {}
+
+    def fake_findings(**kwargs):
+        captured.update(kwargs)
+        return {"items": [finding], "total": 1}
+
+    monkeypatch.setattr(
+        "app.api.v1.findings.neo4j_client.list_security_findings",
+        fake_findings,
+    )
+    monkeypatch.setattr(
+        "app.api.v1.findings.neo4j_client.findings_summary",
+        lambda: summary,
+    )
+
+    response = client.get(
+        "/api/v1/findings?risk_level=high&status=open",
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["items"][0]["asset_name"] == "WEB-PROD-01"
+    assert response.json()["summary"]["sla_breaches"] == 1
+    assert captured["risk_level"] == "high"
+    assert captured["status"] == "open"
+
+    export_response = client.get(
+        "/api/v1/findings/export?risk_level=high&sort_by=first_detected&sort_direction=asc",
+        headers=admin_headers,
+    )
+
+    assert export_response.status_code == 200
+    assert export_response.headers["content-type"].startswith("text/csv")
+    assert "CVE-2026-4102" in export_response.text
+    assert captured["sort_by"] == "first_detected"
+    assert captured["sort_direction"] == "asc"
+
+
+def test_security_findings_endpoint_requires_authentication(client):
+    response = client.get("/api/v1/findings")
 
     assert response.status_code == 401

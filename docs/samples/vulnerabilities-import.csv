@@ -1,3 +1,3 @@
-cve_id,title,severity,cvss_score,status,description,asset_ids
-CVE-2026-10001,Outdated TLS component,high,8.1,open,Upgrade the affected TLS component,asset-002
-CVE-2026-10002,Excessive database privileges,medium,6.4,open,Restrict the service account role,asset-001
+cve_id,title,severity,cvss_score,status,first_detected,last_seen,sla_due_at,data_sources,recommended_remediation,description,asset_ids
+CVE-2026-10001,Outdated TLS component,high,8.1,open,2026-06-01T08:00:00Z,2026-08-08T11:30:00Z,2026-07-01T00:00:00Z,"Vulnerability Management, SIEM",Upgrade the affected TLS component,Legacy TLS library detected,asset-002
+CVE-2026-10002,Excessive database privileges,medium,6.4,in_progress,2026-07-15T10:00:00Z,2026-08-09T02:15:00Z,2026-09-15T00:00:00Z,"Active Directory / Identity, CMDB",Restrict the service account role,Service identity has broader privileges than required,asset-001

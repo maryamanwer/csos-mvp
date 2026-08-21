@@ -7,6 +7,7 @@ from app.api.v1 import (
     chat,
     compliance,
     dashboard,
+    findings,
     reports,
     risk,
     standards,
@@ -26,3 +27,4 @@ api_router.include_router(admin.router)
 api_router.include_router(topology.router)
 api_router.include_router(vulnerabilities.router)
 api_router.include_router(dashboard.router)
+api_router.include_router(findings.router)

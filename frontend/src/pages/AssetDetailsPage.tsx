@@ -123,7 +123,12 @@ export const AssetDetailsPage = () => {
           <Typography><strong>Type:</strong> {asset.type.replace(/_/g, " ")}</Typography>
           <Typography><strong>Environment:</strong> {asset.environment}</Typography>
           <Typography><strong>Owner:</strong> {asset.owner ?? "—"}</Typography>
+          <Typography><strong>Preferred hostname:</strong> {asset.hostname ?? asset.name}</Typography>
           <Typography><strong>IP address:</strong> {asset.ip_address ?? "—"}</Typography>
+          <Typography><strong>Operating system:</strong> {asset.operating_system ?? "—"}</Typography>
+          <Typography><strong>EDR coverage:</strong> {asset.edr_status?.replace(/_/g, " ") ?? "unknown"}{asset.edr_product ? ` · ${asset.edr_product}` : ""}</Typography>
+          <Typography><strong>Managed status:</strong> {asset.managed_status ?? "unknown"}</Typography>
+          <Typography><strong>Data sources:</strong> {asset.data_sources?.join(", ") || "—"}</Typography>
           <Typography><strong>Description:</strong> {asset.description ?? "—"}</Typography>
           <Typography><strong>Risk score:</strong> {asset.risk_score ?? 0}</Typography>
         </Box>}
@@ -150,7 +155,7 @@ export const AssetDetailsPage = () => {
             {availableAssets.map((item) => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}
           </TextField>
           <TextField select label="Relationship type" value={relationshipType} onChange={(event) => setRelationshipType(event.target.value)}>
-            {["CONNECTS_TO", "DEPENDS_ON", "HOSTS", "COMMUNICATES_WITH"].map((value) => <MenuItem key={value} value={value}>{value.replace(/_/g, " ")}</MenuItem>)}
+            {["CONNECTS_TO", "CONNECTED_TO", "DEPENDS_ON", "HOSTS", "COMMUNICATES_WITH", "PROTECTED_BY", "CONNECTED_THROUGH"].map((value) => <MenuItem key={value} value={value}>{value.replace(/_/g, " ")}</MenuItem>)}
           </TextField>
         </DialogContent>
         <DialogActions>

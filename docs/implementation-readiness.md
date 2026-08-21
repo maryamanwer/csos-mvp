@@ -13,6 +13,9 @@ delivery phase and the concrete evidence now present in the codebase.
 | Neo4j schema | `database/neo4j/schema.cypher` | Complete with graph constraints and demo relationships |
 | Repository scaffold | `backend/`, `frontend/`, and `docker-compose.yml` | Complete and locally configurable |
 | Network Topology requested by client | `/api/v1/topology`, `/topology`, Asset Details relationship tab | Implemented from Neo4j data |
+| Professional network/security relationships | Interface-aware semantic layers, risk colors, filters, highlighting, and node/edge details | Implemented from bounded Neo4j projections |
+| Correlated Security Findings requested by client | `/api/v1/findings`, `/findings`, saved views, export, and finding/asset drill-down | Implemented from normalized graph data |
+| Authorized MCP integration requested by client | `mcp-gateway/`, port 8001, CSOS JWT validation, approved tools/resources | Implemented over existing RBAC-protected APIs; live vendor credentials remain separate |
 | Pluggable local AI models requested by client | Environment allow-list and `ModelProvider` interface | Implemented at architecture boundary |
 | Local environment template | `backend/.env.example` | Complete |
 | Container web/API routing | `frontend/nginx.conf` and Compose port mapping | Complete |

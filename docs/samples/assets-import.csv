@@ -1,3 +1,3 @@
-name,type,environment,criticality,owner,ip_address,description
-PAYMENTS-API,application,production,critical,Digital Banking,10.10.20.15,Customer payment processing API
-ANALYTICS-DB,database,production,high,Data Platform,10.10.30.22,Security analytics database
+name,hostname,type,environment,criticality,owner,ip_address,operating_system,edr_status,edr_product,edr_agent_version,edr_agent_outdated,managed_status,data_sources,description
+PAYMENTS-API,payments-api.csos.demo,application,production,critical,Digital Banking,10.10.20.15,Ubuntu Server 24.04,active,CSOS Endpoint Sensor,8.4.2,false,managed,"CMDB, EDR / XDR, Vulnerability Management",Customer payment processing API
+ANALYTICS-DB,analytics-db.csos.demo,database,production,high,Data Platform,10.10.30.22,Red Hat Enterprise Linux 9,outdated,CSOS Endpoint Sensor,7.8.0,true,managed,"CMDB, EDR / XDR",Security analytics database

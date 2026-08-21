@@ -11,8 +11,11 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Auth
-    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_SECRET_KEY: str = "change-me-in-production-32-bytes-minimum"
     JWT_ALGORITHM: str = "HS256"
+    JWT_ISSUER: str = "csos-auth"
+    JWT_PLATFORM_AUDIENCE: str = "csos-platform"
+    JWT_MCP_AUDIENCE: str = "csos-mcp"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     DEMO_ADMIN_EMAIL: str = "admin@csos.com"
