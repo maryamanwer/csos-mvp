@@ -39,6 +39,8 @@ def create_access_token(
         "sub": subject,
         "role": role,
         "email": email,
+        "iss": settings.JWT_ISSUER,
+        "aud": [settings.JWT_PLATFORM_AUDIENCE, settings.JWT_MCP_AUDIENCE],
         "exp": expire,
         "type": "access",
     }
@@ -50,6 +52,8 @@ def create_refresh_token(subject: str, token_id: str | None = None) -> str:
     payload = {
         "sub": subject,
         "jti": token_id or str(uuid.uuid4()),
+        "iss": settings.JWT_ISSUER,
+        "aud": settings.JWT_PLATFORM_AUDIENCE,
         "exp": expire,
         "type": "refresh",
     }
@@ -63,7 +67,13 @@ def token_fingerprint(token: str) -> str:
 
 def decode_token(token: str) -> dict:
     try:
-        return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+        return jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM],
+            audience=settings.JWT_PLATFORM_AUDIENCE,
+            issuer=settings.JWT_ISSUER,
+        )
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

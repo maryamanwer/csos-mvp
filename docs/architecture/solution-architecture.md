@@ -13,6 +13,9 @@
 │ 2.5 Custom Standards & Policies Input Layer                      │
 │    Upload (CSV/Excel/Word/JSON/Manual) → Normalize → Map         │
 ├──────────────────────────────────────────────────────────────────┤
+│ 2.6 MCP Integration Boundary (Streamable HTTP + JWT/RBAC)        │
+│    Approved tools/resources → existing authorized CSOS APIs      │
+├──────────────────────────────────────────────────────────────────┤
 │ 3. AI Layer (LangGraph + LangChain + Model Provider Boundary)    │
 │    Orchestrator → Asset / Risk / Compliance / Chat               │
 │    Default local runtime: Ollama                                  │
@@ -40,6 +43,7 @@
 | Application | Risk Engine | Score and prioritize risk | FastAPI |
 | Application | Compliance Engine | Framework/control mapping | FastAPI |
 | Input | Standards Ingestor | Parse, normalize, and map uploaded controls | pandas, python-docx, openpyxl |
+| Integration | MCP Gateway | Expose approved read-only CSOS tools/resources to authorized MCP hosts and future agents | MCP Python SDK, Streamable HTTP |
 | AI | Orchestrator | Route requests to grounded specialist agents | LangGraph |
 | AI | Model Provider Boundary | Resolve configured provider/model without coupling agents to a vendor | Python provider adapters |
 | AI | Ollama Adapter | Run compatible models locally or in an air-gapped network | Ollama |
@@ -71,9 +75,10 @@
 5. `GET /api/v1/findings/export` applies the same filters to a bounded CSV
    export. Saved views remain user-browser preferences and do not alter source
    data.
-6. Future connector or MCP services write through the same normalization
-   boundary; the dashboard and graph contracts do not depend on a particular
-   security vendor.
+6. The MCP Gateway exposes this projection and other approved read-only CSOS
+   capabilities without bypassing the same API authorization boundary.
+7. Future vendor connectors write through the same normalization boundary; the
+   dashboard, graph, and MCP contracts do not depend on a particular vendor.
 
 ## 5. AI Investigation Data Flow
 
@@ -89,6 +94,7 @@
 docker-compose.yml
  ├── frontend        Nginx + React; proxies /api to backend   :3000
  ├── backend         FastAPI + Uvicorn                        :8000
+ ├── mcp-gateway     Authenticated Streamable HTTP MCP server :8001
  ├── postgres        PostgreSQL 16                            :5432
  ├── neo4j           Neo4j 5 Community                        :7474 / :7687
  ├── neo4j-init      One-shot schema and demo relationship load
@@ -103,7 +109,9 @@ the API becomes healthy.
 ## 7. Security Model
 
 - JWT bearer access and refresh tokens.
+- Access JWTs include issuer and platform/MCP audiences; refresh tokens are not accepted by MCP.
 - RBAC enforced by FastAPI dependencies.
+- MCP validates the JWT before forwarding it, then FastAPI revalidates the active user and role.
 - Password hashes stored with bcrypt when PostgreSQL authentication is enabled.
 - Audit records for authentication and sensitive administrative actions.
 - Bounded topology query limits and validated request parameters.
@@ -115,6 +123,7 @@ the API becomes healthy.
 - New AI models are added through configuration; new runtimes implement the model-provider interface.
 - New agents plug into the LangGraph orchestrator without changing existing agents.
 - Enterprise connectors implement a common connector interface and write normalized graph entities/relationships.
-- Future MCP servers expose approved connector tools through a gateway; MCP is an integration boundary, not a replacement for authorization, normalization, or the Cyber Knowledge Graph.
+- The MCP Gateway exposes approved read-only platform tools and resources; MCP is an integration boundary, not a replacement for authorization, normalization, or the Cyber Knowledge Graph.
+- Live vendor adapters plug into the normalized connector boundary when credentials and mappings are available.
 - Live topology synchronization consumes the same Neo4j model and API contract.
 - Attack-path analysis consumes the same graph without replacing the topology visualization.

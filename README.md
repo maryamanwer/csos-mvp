@@ -12,8 +12,10 @@ interactive Network Topology delivered in Phase 1. The current security
 operations extension adds a correlated Security Findings workspace and a
 layered, interface-aware topology generated from the Cyber Knowledge Graph.
 
-AI intelligence, advanced graph analytics, reporting, and remaining workflow
-automation are explicitly scheduled in Phases 3 and 4.
+Phase 3 has started with an authenticated, read-only MCP Gateway over
+Streamable HTTP. AI intelligence, live vendor connectors, advanced graph
+analytics, reporting, and remaining workflow automation continue in Phases 3
+and 4.
 
 ## Phase 1 deliverables
 
@@ -41,6 +43,14 @@ automation are explicitly scheduled in Phases 3 and 4.
 10. Layered network/security topology with interface, IP, VLAN, vulnerability,
     risk, identity, and security-control context
 
+## Phase 3 capability delivered
+
+1. Standalone MCP 2.x resource server over Streamable HTTP
+2. CSOS JWT bearer validation with issuer, audience, expiry, and token-type checks
+3. Double-enforced RBAC through the gateway and existing FastAPI endpoints
+4. Nine read-only tools for identity, assets, findings, topology, risk, and compliance
+5. Findings, topology, and connector-catalog resources plus an investigation prompt
+
 ## Repository layout
 
 ```text
@@ -58,6 +68,8 @@ csos-mvp/
 │       ├── agents/                LangGraph agent scaffold
 │       ├── models/                SQLAlchemy/PostgreSQL models
 │       └── schemas/               API request/response models
+├── mcp-gateway/
+│   └── csos_mcp/                  Authenticated MCP server and CSOS API client
 ├── frontend/
 │   └── src/
 │       ├── pages/                 Role-aware platform screens
@@ -81,6 +93,8 @@ the web application through Nginx.
 
 - Web application: `http://localhost:3000`
 - API documentation: `http://localhost:8000/docs`
+- MCP endpoint: `http://localhost:8001/mcp`
+- MCP health: `http://localhost:8001/health`
 - Neo4j Browser: `http://localhost:7474`
 - Development login: `admin@csos.com` / `csos-demo`
 
@@ -115,6 +129,8 @@ npm run dev
 | Network Topology API and interactive graph screen | Implemented from bounded Neo4j projections with semantic layers, interface labels, risk colors, filtering, and relationship highlighting |
 | Asset relationship topology tab | Implemented; focuses the selected asset's neighborhood |
 | Provider-independent model boundary | Implemented; Ollama default with configurable compatible models |
+| MCP Gateway | Implemented as an authenticated, read-only Streamable HTTP resource server over approved CSOS APIs |
+| Live EDR/SIEM/CMDB/cloud connectors | Credentials and vendor mappings remain Phase 3 work |
 | LangGraph orchestrator | Compiles; model-driven reasoning and streaming are Phase 3 |
 | Risk, compliance, reporting, standards ingestion | Foundations exist; advanced intelligence and delivery follow Phases 3 and 4 |
 
@@ -138,10 +154,12 @@ agent and application architecture does not need to change.
 
 ```bash
 cd backend && pytest
+cd mcp-gateway && pytest
 cd frontend && npm test -- --run
 cd frontend && npm run build
 ```
 
 See `docs/security-findings-and-topology.md` for the delivered security
-operations behavior and `docs/roadmap/development-roadmap.md` for the next
-implementation phase.
+operations behavior, `docs/mcp-gateway.md` and
+`docs/phase-3-mcp-release-notes.md` for MCP usage and scope, and
+`docs/roadmap/development-roadmap.md` for the remaining implementation work.

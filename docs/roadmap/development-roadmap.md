@@ -30,6 +30,8 @@
 
 ## Implementation Phase 3 – AI & Knowledge Graph Intelligence
 
+- [x] Add authenticated MCP Gateway with approved CSOS tools and resources
+- [x] Reuse CSOS JWT identity and enforce existing FastAPI RBAC on MCP tool calls
 - [ ] Extend normalized domain persistence for live enterprise connector payloads
 - [ ] Advanced multi-hop attack-path queries and path comparison
 - [ ] Complete LangGraph Orchestrator routing
@@ -37,7 +39,7 @@
 - [ ] Stream AI Chat responses with grounded citations and agent traces
 - [ ] Ollama lifecycle, health checks, and model-management UI
 - [ ] Validate configured Llama, DeepSeek, Qwen, Mistral, ALLAM, and compatible sovereign models
-- [ ] Add live connectors through the common connector interface and authorized MCP gateway
+- [ ] Configure live EDR/XDR, SIEM, CMDB, identity, cloud, firewall, and patch adapters
 
 ## Implementation Phase 4 – Platform Completion & Delivery
 

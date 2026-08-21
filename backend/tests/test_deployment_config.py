@@ -15,6 +15,9 @@ def test_compose_wires_graph_initialization_and_web_proxy_port():
     assert services["neo4j-init"]["volumes"] == [
         "./database/neo4j/schema.cypher:/schema/schema.cypher:ro"
     ]
+    assert services["mcp-gateway"]["ports"] == ["8001:8001"]
+    assert services["mcp-gateway"]["depends_on"]["backend"]["condition"] == "service_healthy"
+    assert services["frontend"]["depends_on"]["mcp-gateway"]["condition"] == "service_healthy"
 
 
 def test_nginx_proxies_api_and_supports_client_side_routes():

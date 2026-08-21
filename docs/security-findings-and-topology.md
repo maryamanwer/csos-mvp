@@ -38,9 +38,10 @@ on normalized asset and vulnerability observations and returned as one union.
 The current repository supports imports and seeded demonstration observations.
 EDR/XDR, vulnerability management, CMDB, identity, SIEM, cloud, network,
 firewall, and patch-management products can later write to the same normalized
-model through connector services. An MCP gateway can expose approved connector
-tools to CSOS AI agents without bypassing RBAC or making the UI vendor-specific.
-No live MCP connector is claimed in this delivery.
+model through connector services. The delivered MCP gateway now exposes
+approved, read-only CSOS tools and resources without bypassing RBAC or making
+the UI vendor-specific. Live vendor adapters still require credentials and
+source-specific mappings.
 
 ## Network and security topology
 
@@ -109,9 +110,10 @@ Compose again; do not use that operation against production data.
 ## Current integration boundary
 
 - Implemented now: imports, normalized Neo4j data, correlation API, findings
-  workspace, topology projection, and investigation UI.
-- Designed for later: live connector ingestion, MCP gateway/server adapters,
-  agent tool calls, automated discovery, and multi-hop attack-path analytics.
+  workspace, topology projection, investigation UI, and an authenticated MCP
+  gateway over existing CSOS APIs.
+- Designed for later: credentialed live connector ingestion, agent-driven MCP
+  tool calls, automated discovery, and multi-hop attack-path analytics.
 
 This separation keeps the current platform truthful and runnable while allowing
 new security sources to be added without rewriting the dashboard or topology.
