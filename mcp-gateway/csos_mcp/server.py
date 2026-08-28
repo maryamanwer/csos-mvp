@@ -148,6 +148,31 @@ async def get_topology(focus_asset_id: str | None = None) -> dict[str, Any]:
 
 
 @mcp.tool()
+async def list_attack_paths(
+    max_hops: Annotated[int, Field(ge=1, le=8)] = 4,
+    limit: Annotated[int, Field(ge=1, le=50)] = 25,
+) -> list[dict[str, Any]]:
+    """List ranked, evidence-backed multi-hop paths to important assets."""
+    return await api.get(
+        "/topology/attack-paths",
+        _bearer_token(),
+        {"max_hops": max_hops, "limit": limit},
+    )
+
+
+@mcp.tool()
+async def list_data_sources() -> list[dict[str, Any]]:
+    """List configured collection sources and their latest run status."""
+    return await api.get("/connectors", _bearer_token())
+
+
+@mcp.tool()
+async def get_ai_runtime_status() -> dict[str, Any]:
+    """Read local Ollama health and approved/installed model status."""
+    return await api.get("/ai/models/status", _bearer_token())
+
+
+@mcp.tool()
 async def get_executive_risk_summary() -> dict[str, Any]:
     """Read current executive risk, asset, vulnerability, and compliance KPIs."""
     return await api.get("/dashboard/executive", _bearer_token())
@@ -180,17 +205,22 @@ async def current_topology() -> dict[str, Any]:
 
 
 @mcp.resource("csos://connectors/catalog", mime_type="application/json")
-def connector_catalog() -> dict[str, Any]:
-    """Connector readiness without claiming unconfigured vendors are live."""
+async def connector_catalog() -> dict[str, Any]:
+    """Live connector readiness without claiming unconfigured vendors are active."""
+    token = _bearer_token()
+    connector_types = await api.get("/connectors/types", token)
+    configured = await api.get("/connectors", token)
+    configured_keys = {item.get("connector_key") for item in configured}
     return {
-        "active_sources": ["Neo4j Cyber Knowledge Graph", "PostgreSQL", "CSV/XLSX imports"],
+        "platform_sources": ["Neo4j Cyber Knowledge Graph", "PostgreSQL", "CSV/XLSX imports"],
         "mcp_gateway": "connected",
-        "vendor_connectors": [
-            {"category": "EDR / XDR", "status": "credentials_required"},
-            {"category": "SIEM", "status": "credentials_required"},
-            {"category": "CMDB", "status": "credentials_required"},
-            {"category": "Cloud", "status": "credentials_required"},
-            {"category": "Identity", "status": "credentials_required"},
+        "configured_sources": configured,
+        "available_adapters": [
+            {
+                **item,
+                "status": "configured" if item.get("key") in configured_keys else "credentials_required",
+            }
+            for item in connector_types
         ],
     }
 

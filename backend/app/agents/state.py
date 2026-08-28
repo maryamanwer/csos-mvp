@@ -1,7 +1,4 @@
-"""
-Shared state passed between nodes in the LangGraph orchestrator graph.
-TODO(P3): extend with retrieved_context typing per agent and message history.
-"""
+"""Shared state passed between grounded LangGraph nodes."""
 from typing import TypedDict
 
 
@@ -12,3 +9,5 @@ class AgentState(TypedDict, total=False):
     retrieved_context: dict
     agent_trace: list[str]
     final_reply: str
+    conversation_history: list[dict[str, str]]
+    citations: list[dict[str, str]]

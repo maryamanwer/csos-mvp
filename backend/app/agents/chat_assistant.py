@@ -1,35 +1,74 @@
-"""
-AI Chat Assistant — final LangGraph node.
-Formats the natural-language reply from whatever context the
-specialist agents retrieved.
+"""Final grounded response node with a deterministic local fallback."""
+import json
 
-TODO(P3): replace the string-templating below with a ModelProvider call:
-
-    from app.ai import get_model_provider
-    provider = get_model_provider()
-    reply = provider.generate(build_prompt(state))
-
-The prompt should instruct the model to: only use retrieved_context
-facts (no hallucination), cite asset/control IDs, and phrase the
-answer appropriately for state["user_role"].
-"""
+from app.ai.providers import get_model_provider
 from app.agents.state import AgentState
 
 
 def chat_assistant_node(state: AgentState) -> AgentState:
     context = state.get("retrieved_context", {})
-    parts = []
+    parts: list[str] = []
 
     if "assets" in context:
-        parts.append(f"Found {len(context['assets'])} matching asset(s).")
+        names = [
+            str(item.get("a", item).get("name", item.get("a", item).get("id", "asset")))
+            for item in context["assets"][:5]
+        ]
+        parts.append(f"Assets ({len(context['assets'])}): {', '.join(names) or 'none'}.")
     if "risks" in context:
-        parts.append(f"Top {len(context['risks'])} risk(s) retrieved from the Knowledge Graph.")
+        risk_names = [
+            str(item.get("title") or item.get("risk", {}).get("title") or item.get("id") or "risk")
+            for item in context["risks"][:5]
+        ]
+        parts.append(f"Top risks ({len(context['risks'])}): {', '.join(risk_names) or 'none'}.")
+    if "attack_paths" in context:
+        parts.append(f"Ranked attack paths identified: {len(context['attack_paths'])}.")
     if "compliance_gaps" in context:
-        parts.append(f"{len(context['compliance_gaps'])} control gap(s) identified.")
+        framework = context.get("compliance_framework", "the selected framework")
+        parts.append(f"{framework} compliance gaps identified: {len(context['compliance_gaps'])}.")
 
     if not parts:
-        parts.append("No specialist agent produced context for this query yet (stub response).")
+        parts.append("No matching CSOS records were found for this question.")
 
-    state["final_reply"] = " ".join(parts)
+    fallback = " ".join(parts)
+    citations: list[dict[str, str]] = []
+    for category, items in context.items():
+        if not isinstance(items, list):
+            continue
+        for item in items[:10]:
+            if not hasattr(item, "get"):
+                continue
+            entity = item
+            for key in ("asset", "risk", "a", "r", "c", "v"):
+                candidate = item.get(key)
+                if hasattr(candidate, "get"):
+                    entity = candidate
+                    break
+            entity_id = entity.get("id") if hasattr(entity, "get") else None
+            if entity_id:
+                citations.append({
+                    "entity_type": category,
+                    "entity_id": str(entity_id),
+                    "label": str(entity.get("name") or entity.get("title") or entity_id),
+                })
+    state["citations"] = citations
+    history = state.get("conversation_history", [])[-10:]
+    prompt = (
+        "You are the CSOS security assistant. Answer only from the JSON context below. "
+        "Do not invent facts. Cite asset, risk, vulnerability or control IDs when present. "
+        f"Use concise language appropriate for a {state.get('user_role', 'Analyst')}.\n"
+        f"Question: {state.get('user_query', '')}\n"
+        f"Recent conversation: {json.dumps(history, default=str)}\n"
+        f"Context: {json.dumps(context, default=str)[:24000]}"
+    )
+    try:
+        generated = get_model_provider().generate(prompt)
+        state["final_reply"] = generated.strip() or fallback
+        state.setdefault("agent_trace", []).append("ollama:grounded_generation")
+    except Exception as exc:  # local runtime/model may not yet be installed
+        state["final_reply"] = fallback
+        state.setdefault("agent_trace", []).append(
+            f"local_model_fallback:{type(exc).__name__}"
+        )
     state.setdefault("agent_trace", []).append("chat_assistant")
     return state

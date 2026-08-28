@@ -53,12 +53,12 @@
 
 ## 3. Network Topology Data Flow
 
-1. Assets and relationships are created manually, imported, or written by future connectors.
+1. Assets and relationships are created manually, imported, or written by the collection workers and configured connectors.
 2. Neo4j remains the source of truth for graph entities and relationship types.
 3. `GET /api/v1/topology` requests a bounded graph projection; an optional asset ID narrows it to the asset's direct neighborhood.
 4. The API returns explicit nodes and edges with stable entity IDs, types, labels, risk context, edge categories, and interface metadata when stored.
 5. The React topology workspace renders semantic network/security layers and applies search, filters, pan, zoom, fit-to-screen, node/edge selection, relationship highlighting, and detail inspection.
-6. No live network discovery is required for this flow. Future discovery connectors write into the same graph and the visualization updates without an architecture change.
+6. SSH, SNMPv3, Nmap, Syslog, endpoint-agent, and enterprise REST sources write into the same graph, so the visualization updates without an architecture change.
 
 ## 4. Security Findings Correlation Flow
 
@@ -77,7 +77,7 @@
    data.
 6. The MCP Gateway exposes this projection and other approved read-only CSOS
    capabilities without bypassing the same API authorization boundary.
-7. Future vendor connectors write through the same normalization boundary; the
+7. Configured vendor connectors write through the same normalization boundary; the
    dashboard, graph, and MCP contracts do not depend on a particular vendor.
 
 ## 5. AI Investigation Data Flow
@@ -95,6 +95,8 @@ docker-compose.yml
  ├── frontend        Nginx + React; proxies /api to backend   :3000
  ├── backend         FastAPI + Uvicorn                        :8000
  ├── mcp-gateway     Authenticated Streamable HTTP MCP server :8001
+ ├── collection-scheduler  Scheduled connector execution
+ ├── syslog-collector      TCP/UDP Syslog ingestion            :5514
  ├── postgres        PostgreSQL 16                            :5432
  ├── neo4j           Neo4j 5 Community                        :7474 / :7687
  ├── neo4j-init      One-shot schema and demo relationship load
@@ -124,6 +126,6 @@ the API becomes healthy.
 - New agents plug into the LangGraph orchestrator without changing existing agents.
 - Enterprise connectors implement a common connector interface and write normalized graph entities/relationships.
 - The MCP Gateway exposes approved read-only platform tools and resources; MCP is an integration boundary, not a replacement for authorization, normalization, or the Cyber Knowledge Graph.
-- Live vendor adapters plug into the normalized connector boundary when credentials and mappings are available.
+- Live vendor adapters plug into the normalized connector boundary using customer-supplied credentials and, when needed, vendor field mappings.
 - Live topology synchronization consumes the same Neo4j model and API contract.
 - Attack-path analysis consumes the same graph without replacing the topology visualization.

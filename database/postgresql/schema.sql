@@ -77,6 +77,81 @@ CREATE TABLE system_config (
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- ---------- Phase 3 collection layer ----------
+CREATE TABLE connector_configs (
+    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name              VARCHAR(255) NOT NULL,
+    connector_key     VARCHAR(100) NOT NULL,
+    description       TEXT,
+    config            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    enabled           BOOLEAN NOT NULL DEFAULT true,
+    schedule_minutes  INTEGER,
+    last_run_at       TIMESTAMPTZ,
+    last_run_status   VARCHAR(20),
+    last_run_summary  JSONB,
+    created_by        UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_connector_configs_key ON connector_configs(connector_key);
+
+CREATE TABLE connector_runs (
+    id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    connector_config_id   UUID NOT NULL REFERENCES connector_configs(id) ON DELETE CASCADE,
+    connector_key         VARCHAR(100) NOT NULL,
+    status                VARCHAR(20) NOT NULL DEFAULT 'queued',
+    trigger               VARCHAR(20) NOT NULL DEFAULT 'manual',
+    started_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    finished_at           TIMESTAMPTZ,
+    duration_seconds      DOUBLE PRECISION,
+    assets_found          INTEGER DEFAULT 0,
+    interfaces_found      INTEGER DEFAULT 0,
+    links_found           INTEGER DEFAULT 0,
+    vulnerabilities_found INTEGER DEFAULT 0,
+    events_found          INTEGER DEFAULT 0,
+    written               JSONB,
+    errors                JSONB,
+    triggered_by          UUID REFERENCES users(id) ON DELETE SET NULL
+);
+CREATE INDEX idx_connector_runs_config ON connector_runs(connector_config_id);
+CREATE INDEX idx_connector_runs_started ON connector_runs(started_at DESC);
+
+CREATE TABLE ingest_api_keys (
+    id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name          VARCHAR(255) NOT NULL,
+    key_hash      VARCHAR(64) UNIQUE NOT NULL,
+    key_prefix    VARCHAR(16) NOT NULL,
+    enabled       BOOLEAN NOT NULL DEFAULT true,
+    scope         VARCHAR(50) NOT NULL DEFAULT 'agent',
+    last_used_at  TIMESTAMPTZ,
+    last_used_ip  VARCHAR(64),
+    use_count     INTEGER NOT NULL DEFAULT 0,
+    created_by    UUID REFERENCES users(id) ON DELETE SET NULL,
+    created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at    TIMESTAMPTZ
+);
+CREATE INDEX idx_ingest_api_keys_hash ON ingest_api_keys(key_hash);
+
+CREATE TABLE ai_conversations (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title       VARCHAR(255),
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_ai_conversations_user ON ai_conversations(user_id);
+
+CREATE TABLE ai_messages (
+    id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    conversation_id  UUID NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+    role              VARCHAR(20) NOT NULL,
+    content           TEXT NOT NULL,
+    agent_trace       JSONB,
+    citations         JSONB,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_ai_messages_conversation ON ai_messages(conversation_id);
+
 -- ---------- Custom Standards / Policy Uploads (metadata; content parsed into Neo4j) ----------
 CREATE TABLE standards_uploads (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

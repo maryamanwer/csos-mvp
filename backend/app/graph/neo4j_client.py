@@ -17,6 +17,9 @@ class Neo4jClient:
         "Framework",
         "NetworkInterface",
         "NetworkSegment",
+        "Subnet",
+        "VLAN",
+        "Event",
     )
     ASSET_RELATIONSHIP_TYPES = {
         "CONNECTS_TO",
@@ -38,6 +41,9 @@ class Neo4jClient:
         "CONNECTED_THROUGH",
         "HAS_INTERFACE",
         "LOCATED_IN",
+        "IN_SUBNET",
+        "MEMBER_OF",
+        "ROUTES_TO",
     }
     VULNERABILITY_RELATIONSHIPS = {"HAS_VULNERABILITY", "CONTRIBUTES_TO"}
     RISK_RELATIONSHIPS = {"AFFECTS", "HAS_RISK", "MITIGATES"}
@@ -64,6 +70,49 @@ class Neo4jClient:
         with self._driver.session() as session:
             result = session.run(query, parameters or {})
             return [record.data() for record in result]
+
+    def attack_paths(self, max_hops: int = 4, limit: int = 25) -> list[dict]:
+        """Rank reachable critical assets using only explicit graph relationships."""
+        hops = max(1, min(int(max_hops), 8))
+        rows = self.run(
+            f"""
+            MATCH p=(entry:Asset)-[:CONNECTS_TO|CONNECTED_TO|COMMUNICATES_WITH|DEPENDS_ON|HOSTS|ROUTES_TO*1..{hops}]->(target:Asset)
+            WHERE (entry.environment = 'external' OR entry.type IN ['firewall', 'endpoint', 'workstation'])
+              AND target.criticality IN ['critical', 'high']
+              AND entry.id <> target.id
+            OPTIONAL MATCH (target)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            WHERE v.status IN ['open', 'in_progress']
+            WITH p, entry, target, collect(DISTINCT properties(v)) AS vulnerabilities
+            WITH p, entry, target, vulnerabilities,
+                 reduce(score = 0, node IN nodes(p) |
+                    score + CASE coalesce(node.criticality, 'low')
+                      WHEN 'critical' THEN 25 WHEN 'high' THEN 15
+                      WHEN 'medium' THEN 7 ELSE 2 END) AS asset_score
+            RETURN entry.id AS source_id, entry.name AS source,
+                   target.id AS target_id, target.name AS target,
+                   [node IN nodes(p) | {{id: node.id, name: node.name,
+                     criticality: node.criticality, type: node.type}}] AS nodes,
+                   [rel IN relationships(p) | type(rel)] AS relationships,
+                   length(p) AS hops, vulnerabilities,
+                   asset_score + reduce(vscore = 0, finding IN vulnerabilities |
+                     vscore + toInteger(coalesce(finding.cvss_score, 0))) AS score
+            ORDER BY score DESC, hops ASC
+            LIMIT $limit
+            """,
+            {"limit": max(1, min(int(limit), 100))},
+        )
+        return [
+            {
+                **row,
+                "id": f"{row.get('source_id')}->{row.get('target_id')}",
+                "risk_level": (
+                    "critical" if row.get("score", 0) >= 70
+                    else "high" if row.get("score", 0) >= 45
+                    else "medium"
+                ),
+            }
+            for row in rows
+        ]
 
     # ---- Assets ---------------------------------------------------------
     def list_assets(

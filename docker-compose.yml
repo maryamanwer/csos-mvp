@@ -66,6 +66,8 @@ services:
       OLLAMA_BASE_URL: http://ollama:11434
     ports:
       - "8000:8000"
+    volumes:
+      - ./imports:/data/imports:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,6 +80,42 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+
+  collection-scheduler:
+    build: ./backend
+    command: ["python", "-m", "app.workers.runner", "scheduler"]
+    env_file: ./backend/.env.example
+    environment:
+      POSTGRES_HOST: postgres
+      NEO4J_URI: bolt://neo4j:7687
+      SCHEDULER_ENABLED: "true"
+    volumes:
+      - ./imports:/data/imports:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  syslog-collector:
+    build: ./backend
+    command: ["python", "-m", "app.workers.runner", "syslog"]
+    env_file: ./backend/.env.example
+    environment:
+      POSTGRES_HOST: postgres
+      NEO4J_URI: bolt://neo4j:7687
+      SYSLOG_ENABLED: "true"
+      SYSLOG_BIND_ADDRESS: 0.0.0.0
+    ports:
+      - "5514:5514/udp"
+      - "5514:5514/tcp"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
   mcp-gateway:
     build: ./mcp-gateway

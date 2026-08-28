@@ -116,6 +116,9 @@ export const complianceCoverage = () => api.get("/compliance/coverage");
 // Chat
 export const sendChatMessage = (message: string, conversation_id?: string) =>
   api.post("/chat", { message, conversation_id });
+export const listChatConversations = () => api.get("/chat/conversations");
+export const getChatConversationMessages = (id: string) =>
+  api.get(`/chat/conversations/${id}/messages`);
 
 // Reports
 export const generateReport = (report_type: string, format: string = "pdf") =>
@@ -133,3 +136,26 @@ export const listRoles = () => api.get("/admin/roles");
 export const updateRole = (id: string, payload: Record<string, unknown>) =>
   api.put(`/admin/roles/${id}`, payload);
 export const auditLog = () => api.get("/admin/audit-log");
+
+// Collection and live enterprise sources
+export const listConnectorTypes = () => api.get("/connectors/types");
+export const listConnectorConfigs = () => api.get("/connectors");
+export const createConnectorConfig = (payload: Record<string, unknown>) =>
+  api.post("/connectors", payload);
+export const updateConnectorConfig = (id: string, payload: Record<string, unknown>) =>
+  api.patch(`/connectors/${id}`, payload);
+export const deleteConnectorConfig = (id: string) => api.delete(`/connectors/${id}`);
+export const testConnectorConfig = (id: string) => api.post(`/connectors/${id}/test`);
+export const runConnectorConfig = (id: string) => api.post(`/connectors/${id}/run`);
+export const recentConnectorRuns = () => api.get("/connectors/runs/recent");
+export const listIngestApiKeys = () => api.get("/ingest/keys");
+export const createIngestApiKey = (payload: Record<string, unknown>) =>
+  api.post("/ingest/keys", payload);
+export const revokeIngestApiKey = (id: string) => api.delete(`/ingest/keys/${id}`);
+
+// AI runtime and attack paths
+export const aiModelStatus = () => api.get("/ai/models/status");
+export const pullAiModel = (model: string) => api.post("/ai/models/pull", { model });
+export const validateAiModel = (model: string) => api.post("/ai/models/validate", { model });
+export const getAttackPaths = (maxHops = 4, limit = 25) =>
+  api.get("/topology/attack-paths", { params: { max_hops: maxHops, limit } });

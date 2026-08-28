@@ -54,6 +54,15 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   agent_trace?: string[];
+  citations?: Array<{ entity_type: string; entity_id: string; label: string }>;
+  created_at?: string;
+}
+
+export interface ChatConversation {
+  id: string;
+  title?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type Severity = "low" | "medium" | "high" | "critical";
@@ -207,4 +216,94 @@ export interface AuditEntry {
   metadata?: Record<string, unknown>;
   ip_address?: string;
   created_at: string;
+}
+
+export interface ConnectorField {
+  name: string;
+  label: string;
+  type: "string" | "textarea" | "select" | "number" | "boolean";
+  required: boolean;
+  secret: boolean;
+  default?: unknown;
+  help?: string;
+  choices?: string[];
+}
+
+export interface ConnectorType {
+  key: string;
+  display_name: string;
+  description: string;
+  category: string;
+  schedulable: boolean;
+  config_fields: ConnectorField[];
+}
+
+export interface ConnectorConfig {
+  id: string;
+  name: string;
+  connector_key: string;
+  description?: string;
+  config: Record<string, unknown>;
+  enabled: boolean;
+  schedule_minutes?: number;
+  last_run_at?: string;
+  last_run_status?: string;
+  last_run_summary?: Record<string, unknown>;
+  created_at?: string;
+}
+
+export interface ConnectorRun {
+  id: string;
+  connector_config_id: string;
+  connector_key: string;
+  status: string;
+  trigger: string;
+  started_at?: string;
+  finished_at?: string;
+  duration_seconds?: number;
+  assets_found: number;
+  interfaces_found: number;
+  links_found: number;
+  vulnerabilities_found: number;
+  events_found: number;
+  errors?: string[];
+}
+
+export interface IngestApiKey {
+  id: string;
+  name: string;
+  key_prefix: string;
+  scope: "agent" | "syslog";
+  enabled: boolean;
+  last_used_at?: string;
+  use_count: number;
+  created_at?: string;
+  expires_at?: string;
+  api_key?: string;
+}
+
+export interface AiModelStatus {
+  provider: string;
+  runtime: string;
+  runtime_url: string;
+  healthy: boolean;
+  default_model: string;
+  configured_models: string[];
+  installed_models: string[];
+  error?: string;
+  air_gapped_ready: boolean;
+}
+
+export interface AttackPath {
+  id: string;
+  source: string;
+  source_id: string;
+  target: string;
+  target_id: string;
+  hops: number;
+  score: number;
+  risk_level: "medium" | "high" | "critical";
+  nodes: Array<{ id: string; name: string; type?: string; criticality?: string }>;
+  relationships: string[];
+  vulnerabilities: Array<Record<string, unknown>>;
 }

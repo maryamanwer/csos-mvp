@@ -8,6 +8,17 @@ from app.schemas.topology import TopologyGraph
 router = APIRouter(prefix="/topology", tags=["topology"])
 
 
+@router.get("/attack-paths")
+def get_attack_paths(
+    max_hops: int = Query(default=4, ge=1, le=8),
+    limit: int = Query(default=25, ge=1, le=100),
+    user: dict = Depends(
+        require_role("Admin", "Analyst", "Engineer", "Executive", "ComplianceOfficer")
+    ),
+):
+    return neo4j_client.attack_paths(max_hops=max_hops, limit=limit)
+
+
 @router.get("", response_model=TopologyGraph)
 def get_topology(
     focus_asset_id: str | None = Query(

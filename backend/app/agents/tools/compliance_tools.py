@@ -1,7 +1,4 @@
-"""
-LangChain tools the Compliance Agent can call.
-TODO(P3): wrap with @tool decorator.
-"""
+"""Graph retrieval functions used by the Compliance Agent."""
 from app.graph.neo4j_client import neo4j_client
 
 

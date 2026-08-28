@@ -4,18 +4,21 @@ CSOS is an air-gapped-ready cybersecurity platform that combines a React web
 application, FastAPI services, PostgreSQL, a Neo4j Cyber Knowledge Graph, and a
 provider-independent AI layer with Ollama as the default local runtime.
 
-**Status: Implementation Phase 2 (Core Platform Development) is complete and
-ready for stakeholder demonstration.** The repository now includes persistent
+**Status: Implementation Phase 3 (AI & Knowledge Graph Intelligence) is
+complete and ready for stakeholder demonstration and customer deployment
+configuration.** The repository includes persistent
 authentication, RBAC administration, live dashboards, asset and vulnerability
 management, Neo4j relationship management, bulk imports, audit history, and the
 interactive Network Topology delivered in Phase 1. The current security
 operations extension adds a correlated Security Findings workspace and a
 layered, interface-aware topology generated from the Cyber Knowledge Graph.
 
-Phase 3 has started with an authenticated, read-only MCP Gateway over
-Streamable HTTP. AI intelligence, live vendor connectors, advanced graph
-analytics, reporting, and remaining workflow automation continue in Phases 3
-and 4.
+Phase 3 adds an authenticated MCP Gateway, hardened collection layer,
+configurable enterprise adapters, attack-path analytics, grounded specialist
+agents, persistent AI chat, and local-model management. Customer credentials,
+endpoints, approved network ranges, and any vendor-specific mappings are
+deployment inputs; Phase 4 retains reporting, workflow, notification, and
+standards-automation scope.
 
 ## Phase 1 deliverables
 
@@ -48,8 +51,15 @@ and 4.
 1. Standalone MCP 2.x resource server over Streamable HTTP
 2. CSOS JWT bearer validation with issuer, audience, expiry, and token-type checks
 3. Double-enforced RBAC through the gateway and existing FastAPI endpoints
-4. Nine read-only tools for identity, assets, findings, topology, risk, and compliance
+4. Twelve read-only tools for identity, assets, findings, topology, attack paths,
+   data sources, local AI status, risk, and compliance
 5. Findings, topology, and connector-catalog resources plus an investigation prompt
+6. SSH, SNMPv3, Nmap, Syslog, endpoint-agent, and enterprise REST collection
+7. Encrypted connector credentials, scoped ingestion keys, scheduling, run history,
+   target restrictions, and audit evidence
+8. Normalized Neo4j correlation and ranked multi-hop attack paths
+9. LangGraph specialist routing with persistent, cited, streamed chat responses
+10. Ollama lifecycle and approved-model administration for air-gapped operation
 
 ## Repository layout
 
@@ -65,7 +75,8 @@ csos-mvp/
 │       ├── ai/                    Provider-independent model adapters
 │       ├── api/v1/                Versioned REST endpoints
 │       ├── graph/                 Neo4j client and topology projection
-│       ├── agents/                LangGraph agent scaffold
+│       ├── agents/                Grounded LangGraph specialist agents
+│       ├── connectors/            Collection and enterprise adapters
 │       ├── models/                SQLAlchemy/PostgreSQL models
 │       └── schemas/               API request/response models
 ├── mcp-gateway/
@@ -130,9 +141,10 @@ npm run dev
 | Asset relationship topology tab | Implemented; focuses the selected asset's neighborhood |
 | Provider-independent model boundary | Implemented; Ollama default with configurable compatible models |
 | MCP Gateway | Implemented as an authenticated, read-only Streamable HTTP resource server over approved CSOS APIs |
-| Live EDR/SIEM/CMDB/cloud connectors | Credentials and vendor mappings remain Phase 3 work |
-| LangGraph orchestrator | Compiles; model-driven reasoning and streaming are Phase 3 |
-| Risk, compliance, reporting, standards ingestion | Foundations exist; advanced intelligence and delivery follow Phases 3 and 4 |
+| Collection and enterprise connectors | SSH, SNMPv3, Nmap, Syslog, endpoint agent, and configurable EDR/XDR, SIEM, CMDB, identity, cloud, firewall, and patch REST adapters implemented; customer credentials/mappings are deployment inputs |
+| LangGraph orchestrator | Implemented with specialist routing, grounded context, persistent history, citations, traces, streaming, and local fallback |
+| Local AI models | Ollama health, approved-model install and validation UI implemented |
+| Risk and compliance intelligence | Grounded specialist retrieval and multi-hop attack paths implemented; Phase 4 retains workflow/report delivery scope |
 
 ## AI model configuration
 
@@ -159,7 +171,7 @@ cd frontend && npm test -- --run
 cd frontend && npm run build
 ```
 
-See `docs/security-findings-and-topology.md` for the delivered security
-operations behavior, `docs/mcp-gateway.md` and
-`docs/phase-3-mcp-release-notes.md` for MCP usage and scope, and
-`docs/roadmap/development-roadmap.md` for the remaining implementation work.
+See `docs/phase-3-completion.md` for deployment and acceptance,
+`docs/security-findings-and-topology.md` for security operations behavior,
+`docs/mcp-gateway.md` for MCP usage, and
+`docs/roadmap/development-roadmap.md` for Phase 4 scope.

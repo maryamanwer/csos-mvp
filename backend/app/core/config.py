@@ -22,6 +22,23 @@ class Settings(BaseSettings):
     DEMO_ADMIN_PASSWORD: str = "csos-demo"
     MAX_IMPORT_ROWS: int = 5000
 
+    # Collection-layer credential protection. Keep this separate from JWT
+    # signing so access-token rotation never destroys stored connector secrets.
+    # Multiple comma-separated values support key rotation; the first encrypts
+    # new values while every configured value can decrypt existing records.
+    CONNECTOR_ENCRYPTION_KEYS: str = "change-me-connector-encryption-key"
+    CONNECTOR_ALLOWED_CIDRS: str = ""
+    CONNECTOR_REQUEST_TIMEOUT_SECONDS: int = 30
+    CONNECTOR_IMPORT_ROOT: str = "/data/imports"
+    CONNECTOR_MAX_IMPORT_BYTES: int = 25_000_000
+    SCHEDULER_ENABLED: bool = False
+    SCHEDULER_TICK_SECONDS: int = 60
+    SYSLOG_ENABLED: bool = False
+    SYSLOG_BIND_ADDRESS: str = "127.0.0.1"
+    SYSLOG_UDP_PORT: int = 5514
+    SYSLOG_TCP_PORT: int = 5514
+    SYSLOG_MAX_MESSAGE_BYTES: int = 65536
+
     # PostgreSQL
     POSTGRES_HOST: str = "postgres"
     POSTGRES_PORT: int = 5432
@@ -59,6 +76,22 @@ class Settings(BaseSettings):
             model.strip()
             for model in self.AI_AVAILABLE_MODELS.split(",")
             if model.strip()
+        )
+
+    @property
+    def connector_encryption_keys(self) -> tuple[str, ...]:
+        return tuple(
+            key.strip()
+            for key in self.CONNECTOR_ENCRYPTION_KEYS.split(",")
+            if key.strip()
+        )
+
+    @property
+    def connector_allowed_cidrs(self) -> tuple[str, ...]:
+        return tuple(
+            cidr.strip()
+            for cidr in self.CONNECTOR_ALLOWED_CIDRS.split(",")
+            if cidr.strip()
         )
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)

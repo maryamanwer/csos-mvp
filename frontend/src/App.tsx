@@ -17,6 +17,8 @@ import { AdministrationPage } from "@/pages/AdministrationPage";
 import { NetworkTopologyPage } from "@/pages/NetworkTopologyPage";
 import { VulnerabilityRepositoryPage } from "@/pages/VulnerabilityRepositoryPage";
 import { SecurityFindingsPage } from "@/pages/SecurityFindingsPage";
+import { DataSourcesPage } from "@/pages/DataSourcesPage";
+import { AiModelsPage } from "@/pages/AiModelsPage";
 import { Role } from "@/types";
 
 const landingPath = (role: Role) => {
@@ -59,6 +61,8 @@ export default function App() {
           <Route path="/risk" element={<Protected roles={["Admin", "Analyst", "Engineer", "Executive"]}><RiskDashboardPage /></Protected>} />
           <Route path="/compliance" element={<Protected roles={["Admin", "ComplianceOfficer", "Executive"]}><ComplianceDashboardPage /></Protected>} />
           <Route path="/chat" element={<Protected><ChatAssistantPage /></Protected>} />
+          <Route path="/data-sources" element={<Protected roles={["Admin", "Engineer"]}><DataSourcesPage /></Protected>} />
+          <Route path="/ai-models" element={<Protected roles={["Admin", "Engineer"]}><AiModelsPage /></Protected>} />
           <Route path="/standards" element={<Protected roles={["Admin", "ComplianceOfficer"]}><CustomStandardsPage /></Protected>} />
           <Route path="/reports" element={<Protected roles={["Admin", "ComplianceOfficer", "Executive"]}><ReportsPage /></Protected>} />
           <Route path="/admin" element={<Protected roles={["Admin"]}><AdministrationPage /></Protected>} />

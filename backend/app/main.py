@@ -21,7 +21,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     description="Cyber Security Operating System (CSOS) backend",
-    version="0.2.0",
+    version="0.3.0",
     lifespan=lifespan,
 )
 
@@ -41,5 +41,5 @@ def health():
         "status": "ok",
         "app": settings.APP_NAME,
         "environment": settings.ENVIRONMENT,
-        "version": "0.2.0",
+        "version": "0.3.0",
     }

@@ -20,8 +20,8 @@ import {
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { RISK_COLORS, resolveNodeRiskLevel, TopologyGraph as TopologyGraphView } from "@/components/topology/TopologyGraph";
-import { getTopology } from "@/services/api";
-import { TopologyEdge, TopologyGraph, TopologyNode } from "@/types";
+import { getAttackPaths, getTopology } from "@/services/api";
+import { AttackPath, TopologyEdge, TopologyGraph, TopologyNode } from "@/types";
 
 const EMPTY_GRAPH: TopologyGraph = { nodes: [], edges: [], truncated: false };
 const RELATIONSHIP_COLORS = {
@@ -101,6 +101,7 @@ export const NetworkTopologyPage = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [attackPaths, setAttackPaths] = useState<AttackPath[]>([]);
 
   const loadTopology = useCallback(async () => {
     setLoading(true);
@@ -108,6 +109,12 @@ export const NetworkTopologyPage = () => {
     try {
       const response = await getTopology();
       setGraph(response.data as TopologyGraph);
+      try {
+        const paths = await getAttackPaths();
+        setAttackPaths(paths.data as AttackPath[]);
+      } catch {
+        setAttackPaths([]);
+      }
     } catch {
       setGraph(EMPTY_GRAPH);
       setError("Topology data could not be loaded from the Cyber Knowledge Graph.");
@@ -172,6 +179,17 @@ export const NetworkTopologyPage = () => {
         <Stack direction="row" spacing={1} sx={{ mt: 1.5 }} alignItems="center" flexWrap="wrap" useFlexGap>
           <Chip label={`${filteredGraph.nodes.length} entities`} /><Chip label={`${filteredGraph.edges.length} relationships`} />
           <Button size="small" onClick={() => { setSearch(""); setAssetType("all"); setRiskLevel("all"); setEnvironment("all"); setRelationship("all"); }}>Clear filters</Button>
+        </Stack>
+      </Paper>
+
+      <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+        <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" spacing={1}>
+          <Box><Typography fontWeight={700}>Multi-hop Attack Paths</Typography><Typography variant="body2" color="text.secondary">Ranked from explicit Neo4j reachability, asset criticality and open vulnerability evidence.</Typography></Box>
+          <Chip label={`${attackPaths.length} path${attackPaths.length === 1 ? "" : "s"}`} color={attackPaths.length ? "warning" : "success"} />
+        </Stack>
+        <Stack direction={{ xs: "column", lg: "row" }} spacing={1} sx={{ mt: 1.5 }}>
+          {attackPaths.slice(0, 4).map((path) => <Card key={path.id} variant="outlined" sx={{ flex: 1, cursor: "pointer" }} onClick={() => setSearch(path.target)}><CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}><Stack direction="row" justifyContent="space-between"><Typography variant="body2" fontWeight={700}>{path.source} → {path.target}</Typography><Chip size="small" color={path.risk_level === "critical" ? "error" : "warning"} label={path.risk_level} /></Stack><Typography variant="caption" color="text.secondary">{path.hops} hops · score {path.score} · {path.vulnerabilities.length} findings</Typography></CardContent></Card>)}
+          {!attackPaths.length && <Typography variant="body2" color="text.secondary">No qualifying attack path is present in the current graph.</Typography>}
         </Stack>
       </Paper>
 

@@ -27,6 +27,13 @@ langgraph==0.2.28
 langchain-community==0.3.1
 ollama==0.3.3
 
+# Collection layer — read-only network and infrastructure access
+netmiko==4.7.0
+ntc-templates==9.2.0
+textfsm==2.1.0
+pysnmp==7.1.29
+defusedxml==0.7.1
+
 # File parsing (Custom Standards upload)
 pandas==2.2.2
 openpyxl==3.1.5

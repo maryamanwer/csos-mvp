@@ -32,14 +32,20 @@
 
 - [x] Add authenticated MCP Gateway with approved CSOS tools and resources
 - [x] Reuse CSOS JWT identity and enforce existing FastAPI RBAC on MCP tool calls
-- [ ] Extend normalized domain persistence for live enterprise connector payloads
-- [ ] Advanced multi-hop attack-path queries and path comparison
-- [ ] Complete LangGraph Orchestrator routing
-- [ ] Complete Asset Intelligence, Risk Assessment, and Compliance Agents
-- [ ] Stream AI Chat responses with grounded citations and agent traces
-- [ ] Ollama lifecycle, health checks, and model-management UI
-- [ ] Validate configured Llama, DeepSeek, Qwen, Mistral, ALLAM, and compatible sovereign models
-- [ ] Configure live EDR/XDR, SIEM, CMDB, identity, cloud, firewall, and patch adapters
+- [x] Extend normalized domain persistence for live enterprise connector payloads
+- [x] Advanced multi-hop attack-path queries and ranked path comparison
+- [x] Complete LangGraph Orchestrator routing
+- [x] Complete Asset Intelligence, Risk Assessment, and Compliance Agents
+- [x] Stream AI Chat responses with grounded citations and agent traces
+- [x] Ollama lifecycle, health checks, and model-management UI
+- [x] Validate configured Llama, DeepSeek, Qwen, Mistral, ALLAM, and compatible sovereign models
+- [x] Add configurable EDR/XDR, SIEM, CMDB, identity, cloud, firewall, and patch adapters
+- [x] Add SSH, SNMPv3, Nmap, Syslog, and endpoint-agent collection
+- [x] Encrypt connector credentials and add scoped ingestion keys, scheduling, audit, and run history
+
+Customer vendor credentials, endpoints, network approvals, and optional
+vendor-specific field mappings are deployment inputs described in
+`docs/phase-3-completion.md`; they are not stored in source control.
 
 ## Implementation Phase 4 – Platform Completion & Delivery
 

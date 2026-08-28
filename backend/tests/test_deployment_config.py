@@ -18,6 +18,9 @@ def test_compose_wires_graph_initialization_and_web_proxy_port():
     assert services["mcp-gateway"]["ports"] == ["8001:8001"]
     assert services["mcp-gateway"]["depends_on"]["backend"]["condition"] == "service_healthy"
     assert services["frontend"]["depends_on"]["mcp-gateway"]["condition"] == "service_healthy"
+    assert services["collection-scheduler"]["command"][-1] == "scheduler"
+    assert services["collection-scheduler"]["environment"]["SCHEDULER_ENABLED"] == "true"
+    assert services["syslog-collector"]["ports"] == ["5514:5514/udp", "5514:5514/tcp"]
 
 
 def test_nginx_proxies_api_and_supports_client_side_routes():
@@ -25,3 +28,9 @@ def test_nginx_proxies_api_and_supports_client_side_routes():
 
     assert "proxy_pass http://backend:8000;" in nginx_config
     assert "try_files $uri $uri/ /index.html;" in nginx_config
+
+
+def test_backend_container_drops_root_privileges():
+    dockerfile = (REPOSITORY_ROOT / "backend" / "Dockerfile").read_text()
+
+    assert "USER csos" in dockerfile

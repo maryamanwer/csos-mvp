@@ -7,6 +7,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY app ./app
 
+RUN useradd --create-home --uid 10001 csos \
+    && chown -R csos:csos /app
+USER csos
+
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

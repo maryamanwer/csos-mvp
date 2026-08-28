@@ -409,3 +409,21 @@ MERGE (i2)-[:ASSOCIATED_WITH {relationship: 'investigator'}]->(web);
 // Full relationship neighborhood for one asset:
 // MATCH (a:Asset {id: $assetId})-[rel]-(n)
 // RETURN a, rel, n;
+
+// Phase 3 collection-layer identity and network indexes.
+CREATE CONSTRAINT asset_source_ref_unique IF NOT EXISTS
+FOR (a:Asset) REQUIRE a.source_ref IS UNIQUE;
+CREATE CONSTRAINT interface_key_unique IF NOT EXISTS
+FOR (i:NetworkInterface) REQUIRE i.key IS UNIQUE;
+CREATE CONSTRAINT subnet_cidr_unique IF NOT EXISTS
+FOR (s:Subnet) REQUIRE s.cidr IS UNIQUE;
+CREATE CONSTRAINT vlan_id_unique IF NOT EXISTS
+FOR (v:VLAN) REQUIRE v.vlan_id IS UNIQUE;
+CREATE CONSTRAINT vulnerability_identity_unique IF NOT EXISTS
+FOR (v:Vulnerability) REQUIRE v.identity IS UNIQUE;
+CREATE INDEX asset_ip_address IF NOT EXISTS FOR (a:Asset) ON (a.ip_address);
+CREATE INDEX asset_discovered_by IF NOT EXISTS FOR (a:Asset) ON (a.discovered_by);
+CREATE INDEX asset_last_seen IF NOT EXISTS FOR (a:Asset) ON (a.last_seen);
+CREATE INDEX interface_ip_address IF NOT EXISTS FOR (i:NetworkInterface) ON (i.ip_address);
+CREATE INDEX event_timestamp IF NOT EXISTS FOR (e:Event) ON (e.timestamp);
+CREATE INDEX event_severity IF NOT EXISTS FOR (e:Event) ON (e.severity);

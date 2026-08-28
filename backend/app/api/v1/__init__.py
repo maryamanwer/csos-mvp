@@ -6,8 +6,11 @@ from app.api.v1 import (
     auth,
     chat,
     compliance,
+    ai_models,
+    connectors,
     dashboard,
     findings,
+    ingest,
     reports,
     risk,
     standards,
@@ -28,3 +31,6 @@ api_router.include_router(topology.router)
 api_router.include_router(vulnerabilities.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(findings.router)
+api_router.include_router(connectors.router)
+api_router.include_router(ingest.router)
+api_router.include_router(ai_models.router)

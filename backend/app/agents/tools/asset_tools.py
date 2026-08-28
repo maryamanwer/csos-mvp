@@ -1,7 +1,4 @@
-"""
-LangChain tools the Asset Intelligence Agent can call.
-TODO(P3): wrap with @tool decorator and register on the agent's tool list.
-"""
+"""Graph retrieval functions used by the Asset Intelligence Agent."""
 from app.graph.neo4j_client import neo4j_client
 
 

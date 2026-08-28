@@ -31,6 +31,9 @@ The first gateway release is intentionally read-only.
 | Tool | `list_security_findings` | Correlated Neo4j findings projection |
 | Tool | `get_security_finding` | Finding investigation relationship chain |
 | Tool | `get_topology` | Cyber Knowledge Graph topology projection |
+| Tool | `list_attack_paths` | Ranked multi-hop graph analysis |
+| Tool | `list_data_sources` | Configured collection source status |
+| Tool | `get_ai_runtime_status` | Local AI runtime/model status |
 | Tool | `get_executive_risk_summary` | Executive dashboard aggregation |
 | Tool | `list_top_risks` | Risk projection |
 | Tool | `get_compliance_coverage` | Compliance API |
@@ -89,10 +92,11 @@ in again once to receive the new token claims.
 - The connector catalog distinguishes active platform sources from vendor
   adapters that still require credentials.
 
-## Current boundary
+## Deployment boundary
 
-The MCP gateway is connected to existing CSOS APIs and graph data now. Live
-EDR/XDR, SIEM, CMDB, identity, cloud, firewall, and patch-management adapters
-still require vendor selection, credentials, field mapping, and connectivity.
-Those adapters will write through the normalized ingestion boundary and can be
-added without changing the MCP tool contracts.
+The MCP gateway is connected to CSOS APIs, configured source status, and graph
+data now. EDR/XDR, SIEM, CMDB, identity, cloud, firewall, and patch-management
+adapter code is included. A customer source becomes live only when its
+read-only endpoint and credential are configured and its mapping is validated;
+these secrets are intentionally absent from source control. Collection writes
+through the normalized ingestion boundary without changing MCP tool contracts.
