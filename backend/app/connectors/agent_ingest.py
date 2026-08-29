@@ -1,131 +1,113 @@
-"""Endpoint agent ingestion.
-
-The agent (``agent/csos_agent.py``) runs on a server or workstation, gathers
-local inventory using nothing but the Python standard library, and POSTs a JSON
-document to ``/api/v1/ingest/agent``. This connector normalizes that document.
-
-Keeping the normalizer here rather than in the API route means the agent format
-is validated in one place and can be unit-tested without HTTP.
-"""
+"""Translate CSOS endpoint observations into the platform evidence model."""
 from __future__ import annotations
 
+import ipaddress
 from typing import Any
 
 from app.connectors.base import BaseConnector, ConfigField, register_connector
 from app.connectors.models import (
-    CollectedAsset,
-    CollectedInterface,
-    CollectedVulnerability,
-    CollectionResult,
+    CollectedAsset, CollectedInterface, CollectedVulnerability, CollectionResult,
 )
-from app.connectors.ssh_network import normalize_device_id
 
-#: Ports whose exposure is worth flagging on an endpoint. Deliberately short —
-#: a long list produces noise that buries the findings that matter.
-NOTEWORTHY_PORTS = {
-    21: ("FTP", "high", 7.5, "Unencrypted file-transfer service"),
-    23: ("Telnet", "critical", 9.0, "Unencrypted remote administration"),
-    445: ("SMB", "high", 7.0, "File sharing exposed to lateral movement"),
-    3389: ("RDP", "high", 7.5, "Remote desktop exposed to the network"),
-    5900: ("VNC", "high", 7.0, "Remote control commonly deployed without strong authentication"),
-    1433: ("MSSQL", "medium", 6.0, "Database service exposed to the network"),
-    3306: ("MySQL", "medium", 6.0, "Database service exposed to the network"),
-    27017: ("MongoDB", "high", 7.5, "Database service commonly left without authentication"),
-    6379: ("Redis", "high", 7.5, "Data store commonly left without authentication"),
-    9200: ("Elasticsearch", "high", 7.5, "Search index commonly left open"),
+_EXPOSURE_RULES = {
+    21: ("FTP", "high", 8.1, "Disable clear-text FTP or restrict it to an approved management network."),
+    23: ("Telnet", "critical", 9.8, "Disable Telnet and use an authenticated encrypted management protocol."),
+    3306: ("MySQL", "high", 8.2, "Restrict database access to approved application hosts."),
+    5432: ("PostgreSQL", "high", 8.2, "Restrict database access to approved application hosts."),
+    6379: ("Redis", "critical", 9.1, "Bind Redis to a private interface and require authentication."),
+    27017: ("MongoDB", "critical", 9.1, "Restrict MongoDB exposure and enable authentication."),
 }
 
 
+def _identity(hostname: str) -> str:
+    return hostname.strip().split(".", 1)[0].upper()
+
+
+def _network_reachable(address: str | None) -> bool:
+    if not address or address in {"*", "0.0.0.0", "::", "[::]"}:
+        return True
+    try:
+        return not ipaddress.ip_address(address.strip("[]")).is_loopback
+    except ValueError:
+        return True
+
+
+def _primary_address(interfaces: list[dict[str, Any]]) -> str | None:
+    candidates: list[str] = []
+    for interface in interfaces:
+        value = interface.get("ip_address")
+        if not value:
+            continue
+        try:
+            address = ipaddress.ip_address(value)
+        except ValueError:
+            continue
+        if not address.is_loopback and not address.is_link_local:
+            candidates.append(value)
+    return candidates[0] if candidates else None
+
+
 def normalize_agent_payload(payload: dict[str, Any]) -> CollectionResult:
-    """Convert one agent report into canonical form.
-
-    Tolerant by design: agents run on machines nobody is watching, so a missing
-    or malformed section degrades that section only.
-    """
     result = CollectionResult(connector_key="agent")
-
     hostname = str(payload.get("hostname") or "").strip()
     agent_id = str(payload.get("agent_id") or "").strip()
-    asset_ref = normalize_device_id(hostname) or agent_id
-    if not asset_ref:
-        result.errors.append("Agent report has no hostname or agent identifier")
+    if not hostname and not agent_id:
+        result.errors.append("Endpoint report does not contain a usable identity")
         return result
 
+    source_ref = _identity(hostname) or agent_id.upper()
     system = payload.get("system") or {}
     network = payload.get("network") or {}
+    raw_interfaces = network.get("interfaces") or []
+    result.assets.append(CollectedAsset(
+        source_ref=source_ref,
+        name=hostname or agent_id,
+        hostname=hostname or None,
+        type=payload.get("asset_type") or "server",
+        criticality=payload.get("criticality") or "medium",
+        environment=payload.get("environment") or "production",
+        owner=payload.get("owner"),
+        ip_address=_primary_address(raw_interfaces),
+        mac_address=network.get("primary_mac"),
+        vendor=system.get("vendor"),
+        model=system.get("model"),
+        os_name=system.get("os_name"),
+        os_version=system.get("os_version"),
+        serial_number=system.get("serial_number"),
+        managed_status="managed",
+        data_sources=["CSOS Endpoint Agent"],
+        tags=["endpoint-agent"],
+    ))
 
-    primary_ip = None
-    interfaces_payload = network.get("interfaces") or []
-    for entry in interfaces_payload:
-        address = entry.get("ip_address")
-        if address and not str(address).startswith("127."):
-            primary_ip = address
-            break
-
-    result.assets.append(
-        CollectedAsset(
-            source_ref=asset_ref,
-            name=hostname or asset_ref,
-            type=str(payload.get("asset_type") or "server"),  # type: ignore[arg-type]
-            criticality=str(payload.get("criticality") or "medium"),  # type: ignore[arg-type]
-            environment=str(payload.get("environment") or "production"),
-            owner=payload.get("owner"),
-            ip_address=primary_ip,
-            os_name=system.get("os_name"),
-            os_version=system.get("os_version"),
-            vendor=system.get("vendor"),
-            model=system.get("model"),
-            serial_number=system.get("serial_number"),
-            mac_address=network.get("primary_mac"),
-            description=f"Reported by CSOS endpoint agent ({agent_id or 'unknown'})",
-            tags=["agent"],
-            raw={
-                "agent_version": payload.get("agent_version"),
-                "reported_at": payload.get("reported_at"),
-                "package_count": len(payload.get("packages") or []),
-            },
-        )
-    )
-
-    for entry in interfaces_payload:
-        name = entry.get("name")
-        if not name:
+    for item in raw_interfaces:
+        if not item.get("name"):
             continue
-        result.interfaces.append(
-            CollectedInterface(
-                asset_ref=asset_ref,
-                name=str(name),
-                ip_address=entry.get("ip_address"),
-                subnet_cidr=entry.get("subnet_cidr"),
-                mac_address=entry.get("mac_address"),
-                status=entry.get("status"),
-            )
-        )
+        result.interfaces.append(CollectedInterface(
+            asset_ref=source_ref,
+            name=str(item["name"]),
+            ip_address=item.get("ip_address"),
+            subnet_cidr=item.get("subnet_cidr"),
+            mac_address=item.get("mac_address"),
+            status=item.get("status"),
+        ))
 
-    for entry in payload.get("listening_ports") or []:
-        try:
-            port = int(entry.get("port"))
-        except (TypeError, ValueError):
+    for listener in payload.get("listening_ports") or []:
+        port = int(listener.get("port") or 0)
+        rule = _EXPOSURE_RULES.get(port)
+        if rule is None or not _network_reachable(listener.get("address")):
             continue
-        if port not in NOTEWORTHY_PORTS:
-            continue
-        service, severity, score, explanation = NOTEWORTHY_PORTS[port]
-        listen_address = str(entry.get("address") or "")
-        # A service bound to loopback is not network-exposed.
-        if listen_address.startswith("127.") or listen_address == "::1":
-            continue
-        result.vulnerabilities.append(
-            CollectedVulnerability(
-                title=f"{service} exposed on port {port}",
-                severity=severity,  # type: ignore[arg-type]
-                cvss_score=score,
-                description=explanation,
-                asset_refs=[asset_ref],
-                port=port,
-                service=service,
-            )
-        )
-
+        service, severity, score, remediation = rule
+        result.vulnerabilities.append(CollectedVulnerability(
+            title=f"Exposed {service} service",
+            severity=severity,
+            cvss_score=score,
+            description=f"{service} is listening on a network-reachable interface.",
+            asset_refs=[source_ref],
+            port=port,
+            service=service.lower(),
+            recommended_remediation=remediation,
+            data_sources=["CSOS Endpoint Agent"],
+        ))
     return result
 
 
@@ -133,29 +115,18 @@ def normalize_agent_payload(payload: dict[str, Any]) -> CollectionResult:
 class AgentConnector(BaseConnector):
     key = "agent"
     display_name = "CSOS Endpoint Agent"
-    description = (
-        "Receives inventory reports from CSOS agents installed on servers and endpoints."
-    )
+    description = "Accepts authenticated endpoint inventory and exposure reports."
     category = "endpoint"
     schedulable = False
-
     config_fields = (
-        ConfigField("enabled", "Enabled", type="boolean", default=True, required=False),
-        ConfigField(
-            "require_api_key",
-            "Require API key",
-            type="boolean",
-            default=True,
-            required=False,
-        ),
+        ConfigField("enabled", "Enabled", type="boolean", required=False, default=True),
+        ConfigField("require_api_key", "Require API key", type="boolean", required=False, default=True),
     )
 
     def collect(self, config: dict[str, Any]) -> CollectionResult:
         result = CollectionResult(connector_key=self.key)
-        result.errors.append(
-            "The agent is push-based and reports to /api/v1/ingest/agent"
-        )
+        result.errors.append("Endpoint reports arrive through /api/v1/ingest/agent")
         return result
 
     def test_connection(self, config: dict[str, Any]) -> tuple[bool, str]:
-        return True, "Agent ingestion endpoint is ready at /api/v1/ingest/agent"
+        return True, "Endpoint ingestion is available."

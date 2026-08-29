@@ -1,13 +1,4 @@
-"""Periodic collection.
-
-Wakes on a fixed tick, asks which configurations are due, and runs them one at
-a time. Sequential by design: collection opens SSH and SNMP sessions against
-production network equipment, and a burst of parallel sessions is exactly the
-kind of load that gets a monitoring tool banned from a network.
-
-Each connector runs in a worker thread so blocking device I/O never stalls the
-API's event loop.
-"""
+"""Single-flight scheduler for configured CSOS pull sources."""
 from __future__ import annotations
 
 import asyncio
@@ -16,74 +7,60 @@ import logging
 from app.core.config import settings
 from app.core.database import SessionLocal
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class CollectionScheduler:
     def __init__(self) -> None:
-        self._task: asyncio.Task | None = None
         self.running = False
         self.ticks = 0
         self.runs_started = 0
+        self._task: asyncio.Task | None = None
 
     async def start(self) -> None:
         if self.running or not settings.SCHEDULER_ENABLED:
             return
-        self._task = asyncio.create_task(self._loop())
         self.running = True
-        logger.info(
-            "Collection scheduler started; tick every %s seconds", settings.SCHEDULER_TICK_SECONDS
-        )
+        self._task = asyncio.create_task(self._serve(), name="csos-source-scheduler")
 
-    async def _loop(self) -> None:
-        # Let the API finish starting before touching the database.
-        await asyncio.sleep(10)
+    async def _serve(self) -> None:
         while True:
             try:
                 await asyncio.sleep(settings.SCHEDULER_TICK_SECONDS)
                 self.ticks += 1
-                await asyncio.to_thread(self._run_due)
+                await asyncio.to_thread(self._execute_due)
             except asyncio.CancelledError:
                 raise
-            except Exception as exc:  # noqa: BLE001 - the loop must survive anything
-                logger.error("Collection scheduler tick failed: %s", exc)
+            except Exception:
+                log.exception("Source scheduler tick failed")
 
-    def _run_due(self) -> None:
+    def _execute_due(self) -> None:
         from app.services.collection import due_configs, execute_run
 
         db = SessionLocal()
         try:
-            pending = due_configs(db)
-            if not pending:
-                return
-            logger.info("Collection scheduler found %s due connector(s)", len(pending))
-            for config in pending:
+            for config in due_configs(db):
                 try:
                     self.runs_started += 1
                     execute_run(db, config, trigger="schedule")
-                except Exception as exc:  # noqa: BLE001
-                    logger.error(
-                        "Scheduled connector %s failed: %s", config.name, exc
-                    )
+                except Exception:
+                    log.exception("Scheduled source failed: %s", config.name)
                     db.rollback()
         finally:
             db.close()
 
     async def stop(self) -> None:
-        if self._task:
-            self._task.cancel()
+        task, self._task = self._task, None
+        if task:
+            task.cancel()
             try:
-                await self._task
+                await task
             except asyncio.CancelledError:
                 pass
         self.running = False
 
     def stats(self) -> dict[str, int | bool]:
-        return {
-            "running": self.running,
-            "ticks": self.ticks,
-            "runs_started": self.runs_started,
-        }
+        return {"running": self.running, "ticks": self.ticks, "runs_started": self.runs_started}
 
 
 collection_scheduler = CollectionScheduler()

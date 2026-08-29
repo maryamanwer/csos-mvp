@@ -1,11 +1,4 @@
-"""Runs connectors and records what each run did.
-
-Every path into the graph goes through :func:`execute_run` — manual triggers,
-the scheduler, and push endpoints alike. That single choke point is what makes
-ingestion auditable: nothing reaches the Knowledge Graph without a
-``ConnectorRun`` row saying which connector produced it, when, and with what
-outcome.
-"""
+"""Orchestration boundary between source adapters, audit history and Neo4j."""
 from __future__ import annotations
 
 import logging
@@ -22,11 +15,10 @@ from app.graph.network_writer import network_writer
 from app.models.connector import ConnectorConfig, ConnectorRun
 from app.services.audit import record_audit
 
-logger = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 def secret_fields_for(connector_key: str) -> set[str]:
-    """Which configuration fields of this connector hold secrets."""
     try:
         connector = get_connector(connector_key)
     except ConnectorError:
@@ -34,31 +26,29 @@ def secret_fields_for(connector_key: str) -> set[str]:
     return {field.name for field in connector.config_fields if field.secret}
 
 
-def _finish(
+def _complete_run(
     db: Session,
     run: ConnectorRun,
-    status: str,
+    config: ConnectorConfig,
     result: CollectionResult,
-    written: dict[str, int] | None,
+    status: str,
     started: float,
+    written: dict[str, int] | None = None,
 ) -> ConnectorRun:
     run.status = status
     run.finished_at = datetime.now(timezone.utc)
     run.duration_seconds = round(time.monotonic() - started, 3)
-    run.assets_found = len(result.assets)
-    run.interfaces_found = len(result.interfaces)
-    run.links_found = len(result.links)
-    run.vulnerabilities_found = len(result.vulnerabilities)
-    run.events_found = len(result.events)
+    counts = result.summary()
+    run.assets_found = counts["assets"]
+    run.interfaces_found = counts["interfaces"]
+    run.links_found = counts["links"]
+    run.vulnerabilities_found = counts["vulnerabilities"]
+    run.events_found = counts["events"]
     run.written = written or {}
     run.errors = result.errors[:50] or None
-
-    config = db.get(ConnectorConfig, run.connector_config_id)
-    if config is not None:
-        config.last_run_at = run.finished_at
-        config.last_run_status = status
-        config.last_run_summary = {**result.summary(), "written": written or {}}
-
+    config.last_run_at = run.finished_at
+    config.last_run_status = status
+    config.last_run_summary = {**counts, "written": written or {}}
     db.commit()
     db.refresh(run)
     return run
@@ -72,15 +62,7 @@ def execute_run(
     user_id: uuid.UUID | None = None,
     writer=None,
 ) -> ConnectorRun:
-    """Collect from one configured source and persist the result.
-
-    A device that cannot be reached is an error inside the result, not an
-    exception — the run is then marked ``partial`` and whatever *was* collected
-    still lands. Only a total failure marks the run ``failed``.
-    """
-    writer = writer or network_writer
     started = time.monotonic()
-
     run = ConnectorRun(
         connector_config_id=config.id,
         connector_key=config.connector_key,
@@ -91,86 +73,54 @@ def execute_run(
     db.add(run)
     db.commit()
     db.refresh(run)
-
     result = CollectionResult(connector_key=config.connector_key)
 
     try:
-        connector = get_connector(config.connector_key)
-        plain_config = decrypt_config(
-            config.config or {}, secret_fields_for(config.connector_key)
-        )
-        result = connector.collect(plain_config)
+        adapter = get_connector(config.connector_key)
+        values = decrypt_config(config.config or {}, secret_fields_for(config.connector_key))
+        result = adapter.collect(values)
         result.connector_key = config.connector_key
-    except Exception as exc:  # noqa: BLE001 - a failed run must still be recorded
-        logger.exception("Connector %s failed", config.connector_key)
-        result.errors.append(str(exc))
-        record_audit(
-            db,
-            "CONNECTOR_RUN_FAILED",
-            user_id=user_id,
-            entity_type="ConnectorConfig",
-            entity_id=str(config.id),
-            metadata={"connector": config.connector_key, "error": str(exc)[:500]},
-        )
-        return _finish(db, run, "failed", result, None, started)
+        written = (writer or network_writer).write(result)
+        status = "partial" if result.errors else "success"
+    except Exception as error:
+        log.exception("Collection failed for %s", config.connector_key)
+        result.errors.append(str(error))
+        written = None
+        status = "failed"
 
-    try:
-        written = writer.write(result)
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Unable to write %s collection result to the graph", config.connector_key)
-        result.errors.append(f"Graph write failed: {exc}")
-        return _finish(db, run, "failed", result, None, started)
-
-    status = "partial" if result.errors else "success"
     record_audit(
         db,
-        "CONNECTOR_RUN",
+        "CONNECTOR_RUN" if status != "failed" else "CONNECTOR_RUN_FAILED",
         user_id=user_id,
         entity_type="ConnectorConfig",
         entity_id=str(config.id),
-        metadata={
-            "connector": config.connector_key,
-            "trigger": trigger,
-            "status": status,
-            **result.summary(),
-        },
+        metadata={"connector": config.connector_key, "trigger": trigger, "status": status, **result.summary()},
     )
-    return _finish(db, run, status, result, written, started)
+    return _complete_run(db, run, config, result, status, started, written)
 
 
-def ingest_pushed_result(
-    result: CollectionResult, writer=None
-) -> dict[str, int]:
-    """Write a push-sourced result (agent, syslog) straight to the graph.
-
-    Push sources have no ``ConnectorConfig`` to schedule, so they bypass run
-    history; their audit trail is the API key usage record instead.
-    """
-    writer = writer or network_writer
-    return writer.write(result)
+def ingest_pushed_result(result: CollectionResult, writer=None) -> dict[str, int]:
+    return (writer or network_writer).write(result)
 
 
 def due_configs(db: Session, now: datetime | None = None) -> list[ConnectorConfig]:
-    """Configurations whose schedule interval has elapsed."""
-    now = now or datetime.now(timezone.utc)
-    candidates = (
+    current = now or datetime.now(timezone.utc)
+    scheduled = (
         db.query(ConnectorConfig)
         .filter(ConnectorConfig.enabled.is_(True))
         .filter(ConnectorConfig.schedule_minutes.isnot(None))
         .all()
     )
-
     due: list[ConnectorConfig] = []
-    for config in candidates:
-        interval = config.schedule_minutes or 0
-        if interval <= 0:
+    for config in scheduled:
+        if not config.schedule_minutes:
             continue
         if config.last_run_at is None:
             due.append(config)
             continue
-        last = config.last_run_at
-        if last.tzinfo is None:
-            last = last.replace(tzinfo=timezone.utc)
-        if (now - last).total_seconds() >= interval * 60:
+        previous = config.last_run_at
+        if previous.tzinfo is None:
+            previous = previous.replace(tzinfo=timezone.utc)
+        if (current - previous).total_seconds() >= config.schedule_minutes * 60:
             due.append(config)
     return due

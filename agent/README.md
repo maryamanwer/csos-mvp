@@ -1,9 +1,9 @@
-# CSOS Endpoint Agent
+# CSOS Endpoint Reporter
 
-The endpoint agent is a read-only, standard-library Python collector for Linux,
-Windows, and macOS. It reports hostname, OS, hardware identity, interfaces,
-listening ports, and an optional bounded package inventory to CSOS. It does not
-make changes to the endpoint.
+This optional CSOS component sends read-only endpoint observations from Linux,
+Windows and macOS systems. It uses the Python standard library and reports a
+bounded inventory containing system identity, interfaces, listeners and,
+optionally, installed packages. It never changes endpoint configuration.
 
 ## Enrolment
 
@@ -21,11 +21,9 @@ python3 csos_agent.py --dry-run
 python3 csos_agent.py --asset-type server --criticality high
 ```
 
-For continuous collection, run it through the operating system's service
-manager with `--daemon --interval 3600`. Use an internal CA trusted by the host.
-`--insecure` exists for temporary testing only and must not be used in
-production.
+For periodic reporting, use the operating system's service manager with
+`--daemon --interval 3600`. Production endpoints should trust the organization's
+internal CA. The `--insecure` option is limited to temporary lab validation.
 
-The API key is write-only and scope-limited: it can submit endpoint inventory
-but cannot read CSOS data or invoke MCP tools. Revoke the key in the portal when
-the source is retired.
+The issued key is write-only and limited to endpoint ingestion. It cannot read
+CSOS data or call MCP tools. Revoke it from the portal when a source is retired.

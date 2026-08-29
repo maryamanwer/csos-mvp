@@ -1,4 +1,4 @@
-"""Request and response models for the collection API."""
+"""Validated HTTP contracts for configuring and feeding CSOS sources."""
 from __future__ import annotations
 
 import uuid
@@ -20,8 +20,6 @@ class ConnectorFieldOut(BaseModel):
 
 
 class ConnectorTypeOut(BaseModel):
-    """A connector the platform knows how to run."""
-
     key: str
     display_name: str
     description: str
@@ -48,8 +46,6 @@ class ConnectorConfigUpdate(BaseModel):
 
 
 class ConnectorConfigOut(BaseModel):
-    """Configuration as returned to a client — secrets are always redacted."""
-
     id: uuid.UUID
     name: str
     connector_key: str
@@ -61,7 +57,6 @@ class ConnectorConfigOut(BaseModel):
     last_run_status: str | None = None
     last_run_summary: dict[str, Any] | None = None
     created_at: datetime | None = None
-
     model_config = {"from_attributes": True}
 
 
@@ -81,7 +76,6 @@ class ConnectorRunOut(BaseModel):
     events_found: int = 0
     written: dict[str, Any] | None = None
     errors: list[str] | None = None
-
     model_config = {"from_attributes": True}
 
 
@@ -89,8 +83,6 @@ class ConnectionTestResult(BaseModel):
     success: bool
     message: str
 
-
-# --- agent ingestion ---------------------------------------------------
 
 class AgentInterface(BaseModel):
     name: str
@@ -101,7 +93,7 @@ class AgentInterface(BaseModel):
 
 
 class AgentListeningPort(BaseModel):
-    port: int
+    port: int = Field(ge=1, le=65535)
     address: str | None = None
     protocol: str | None = "tcp"
     process: str | None = None
@@ -121,16 +113,11 @@ class AgentNetwork(BaseModel):
 
 
 class AgentReport(BaseModel):
-    """What an endpoint agent posts to /api/v1/ingest/agent."""
-
     agent_id: str = Field(min_length=1, max_length=128)
     hostname: str = Field(min_length=1, max_length=255)
     agent_version: str | None = None
     reported_at: str | None = None
-    asset_type: Literal[
-        "server", "application", "network_device", "endpoint", "workstation",
-        "database", "cloud_resource"
-    ] = "server"
+    asset_type: Literal["server", "application", "network_device", "endpoint", "workstation", "database", "cloud_resource"] = "server"
     criticality: Literal["low", "medium", "high", "critical"] = "medium"
     environment: str = "production"
     owner: str | None = None
@@ -141,8 +128,6 @@ class AgentReport(BaseModel):
 
 
 class SyslogBatch(BaseModel):
-    """Log lines forwarded over HTTP, for networks that cannot reach port 514."""
-
     lines: list[str] = Field(min_length=1, max_length=5000)
     source_ip: str | None = None
 
@@ -152,8 +137,6 @@ class IngestResult(BaseModel):
     written: dict[str, int] = Field(default_factory=dict)
     errors: list[str] = Field(default_factory=list)
 
-
-# --- API keys ----------------------------------------------------------
 
 class ApiKeyCreate(BaseModel):
     name: str = Field(min_length=2, max_length=255)
@@ -171,11 +154,8 @@ class ApiKeyOut(BaseModel):
     use_count: int = 0
     created_at: datetime | None = None
     expires_at: datetime | None = None
-
     model_config = {"from_attributes": True}
 
 
 class ApiKeyCreated(ApiKeyOut):
-    """Returned once at creation — the only time the plaintext key exists."""
-
     api_key: str

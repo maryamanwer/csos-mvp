@@ -1,4 +1,4 @@
-"""Collection layer API — configure sources, run them, review what they did."""
+"""Authenticated management API for CSOS data sources."""
 from __future__ import annotations
 
 import uuid
@@ -13,45 +13,49 @@ from app.core.security import require_role
 from app.core.secrets import decrypt_config, encrypt_config, redact_config
 from app.models.connector import ConnectorConfig, ConnectorRun
 from app.schemas.connector import (
-    ConnectionTestResult,
-    ConnectorConfigCreate,
-    ConnectorConfigOut,
-    ConnectorConfigUpdate,
-    ConnectorRunOut,
-    ConnectorTypeOut,
+    ConnectionTestResult, ConnectorConfigCreate, ConnectorConfigOut, ConnectorConfigUpdate,
+    ConnectorRunOut, ConnectorTypeOut,
 )
 from app.services.audit import record_audit
 from app.services.collection import execute_run, secret_fields_for
 
 router = APIRouter(prefix="/connectors", tags=["connectors"])
-
 MANAGE_ROLES = ("Admin", "Engineer")
 VIEW_ROLES = ("Admin", "Engineer", "Analyst", "Executive", "ComplianceOfficer")
+_MASK = "••••••••"
 
 
-def _to_out(config: ConnectorConfig) -> ConnectorConfigOut:
-    """Never return a stored secret, even to an administrator."""
-    payload = ConnectorConfigOut.model_validate(config)
-    payload.config = redact_config(
-        config.config or {}, secret_fields_for(config.connector_key)
-    )
-    return payload
-
-
-def _get_or_404(db: Session, config_id: uuid.UUID) -> ConnectorConfig:
-    config = db.get(ConnectorConfig, config_id)
-    if config is None:
+def _lookup(db: Session, connector_id: uuid.UUID) -> ConnectorConfig:
+    item = db.get(ConnectorConfig, connector_id)
+    if item is None:
         raise HTTPException(status_code=404, detail="Connector configuration not found")
-    return config
+    return item
+
+
+def _response(item: ConnectorConfig) -> ConnectorConfigOut:
+    output = ConnectorConfigOut.model_validate(item)
+    output.config = redact_config(item.config or {}, secret_fields_for(item.connector_key))
+    return output
+
+
+def _adapter(key: str):
+    try:
+        return get_connector(key)
+    except ConnectorError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+def _validated(adapter, values: dict) -> dict:
+    ready = adapter.apply_defaults(values)
+    try:
+        adapter.validate_config(ready)
+    except ConfigurationError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return ready
 
 
 @router.get("/types", response_model=list[ConnectorTypeOut])
 def available_connector_types(user: dict = Depends(require_role(*VIEW_ROLES))):
-    """Every connector the platform can run, with the fields each one needs.
-
-    The UI renders configuration forms from this, so a connector added later
-    needs no front-end change to become configurable.
-    """
     return list_connectors()
 
 
@@ -67,10 +71,7 @@ def list_connector_configs(
         query = query.filter(ConnectorConfig.connector_key == connector_key)
     if enabled is not None:
         query = query.filter(ConnectorConfig.enabled.is_(enabled))
-    return [
-        _to_out(config)
-        for config in query.order_by(ConnectorConfig.created_at.desc()).all()
-    ]
+    return [_response(item) for item in query.order_by(ConnectorConfig.created_at.desc()).all()]
 
 
 @router.post("", response_model=ConnectorConfigOut, status_code=201)
@@ -79,43 +80,22 @@ def create_connector_config(
     db: Session = Depends(get_db),
     user: dict = Depends(require_role(*MANAGE_ROLES)),
 ):
-    try:
-        connector = get_connector(payload.connector_key)
-    except ConnectorError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-
-    merged = connector.apply_defaults(payload.config)
-    try:
-        connector.validate_config(merged)
-    except ConfigurationError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
-
-    if payload.schedule_minutes and not connector.schedulable:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Connector '{payload.connector_key}' is push-based and cannot be scheduled",
-        )
-
-    config = ConnectorConfig(
-        name=payload.name,
-        connector_key=payload.connector_key,
+    adapter = _adapter(payload.connector_key)
+    values = _validated(adapter, payload.config)
+    if payload.schedule_minutes and not adapter.schedulable:
+        raise HTTPException(status_code=422, detail="Push-based connectors cannot be scheduled")
+    item = ConnectorConfig(
+        name=payload.name, connector_key=payload.connector_key,
         description=payload.description,
-        config=encrypt_config(merged, secret_fields_for(payload.connector_key)),
-        enabled=payload.enabled,
-        schedule_minutes=payload.schedule_minutes,
+        config=encrypt_config(values, secret_fields_for(payload.connector_key)),
+        enabled=payload.enabled, schedule_minutes=payload.schedule_minutes,
         created_by=uuid.UUID(str(user["id"])),
     )
-    db.add(config)
-    record_audit(
-        db,
-        "CONNECTOR_CREATE",
-        user_id=user["id"],
-        entity_type="ConnectorConfig",
-        metadata={"connector": payload.connector_key, "name": payload.name},
-    )
+    db.add(item)
+    record_audit(db, "CONNECTOR_CREATE", user_id=user["id"], entity_type="ConnectorConfig", metadata={"connector": payload.connector_key, "name": payload.name})
     db.commit()
-    db.refresh(config)
-    return _to_out(config)
+    db.refresh(item)
+    return _response(item)
 
 
 @router.get("/runs/recent", response_model=list[ConnectorRunOut])
@@ -124,14 +104,7 @@ def recent_runs(
     db: Session = Depends(get_db),
     user: dict = Depends(require_role(*VIEW_ROLES)),
 ):
-    """Latest activity across every source: the collection layer's pulse."""
-    runs = (
-        db.query(ConnectorRun)
-        .order_by(ConnectorRun.started_at.desc())
-        .limit(limit)
-        .all()
-    )
-    return [ConnectorRunOut.model_validate(run) for run in runs]
+    return db.query(ConnectorRun).order_by(ConnectorRun.started_at.desc()).limit(limit).all()
 
 
 @router.patch("/{config_id}", response_model=ConnectorConfigOut)
@@ -141,43 +114,22 @@ def update_connector_config(
     db: Session = Depends(get_db),
     user: dict = Depends(require_role(*MANAGE_ROLES)),
 ):
-    config = _get_or_404(db, config_id)
-    secret_fields = secret_fields_for(config.connector_key)
-
+    item = _lookup(db, config_id)
+    adapter = _adapter(item.connector_key)
+    secret_fields = secret_fields_for(item.connector_key)
     if payload.config is not None:
-        # A redacted secret coming back from the UI means "unchanged" — never
-        # overwrite a stored credential with the mask.
-        existing = decrypt_config(config.config or {}, secret_fields)
-        merged = {**existing}
-        for key, value in payload.config.items():
-            if key in secret_fields and value == "••••••••":
-                continue
-            merged[key] = value
-        try:
-            get_connector(config.connector_key).validate_config(merged)
-        except ConfigurationError as exc:
-            raise HTTPException(status_code=422, detail=str(exc))
-        except ConnectorError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
-        config.config = encrypt_config(merged, secret_fields)
-
-    explicitly_set = payload.model_fields_set
+        values = decrypt_config(item.config or {}, secret_fields)
+        values.update({key: value for key, value in payload.config.items() if not (key in secret_fields and value == _MASK)})
+        item.config = encrypt_config(_validated(adapter, values), secret_fields)
+    if payload.schedule_minutes and not adapter.schedulable:
+        raise HTTPException(status_code=422, detail="Push-based connectors cannot be scheduled")
     for field in ("name", "description", "enabled", "schedule_minutes"):
-        value = getattr(payload, field)
-        if value is not None or field in explicitly_set:
-            setattr(config, field, value)
-
-    record_audit(
-        db,
-        "CONNECTOR_UPDATE",
-        user_id=user["id"],
-        entity_type="ConnectorConfig",
-        entity_id=str(config.id),
-        metadata={"connector": config.connector_key},
-    )
+        if field in payload.model_fields_set:
+            setattr(item, field, getattr(payload, field))
+    record_audit(db, "CONNECTOR_UPDATE", user_id=user["id"], entity_type="ConnectorConfig", entity_id=str(item.id), metadata={"connector": item.connector_key})
     db.commit()
-    db.refresh(config)
-    return _to_out(config)
+    db.refresh(item)
+    return _response(item)
 
 
 @router.delete("/{config_id}", status_code=204)
@@ -186,16 +138,9 @@ def delete_connector_config(
     db: Session = Depends(get_db),
     user: dict = Depends(require_role(*MANAGE_ROLES)),
 ):
-    config = _get_or_404(db, config_id)
-    record_audit(
-        db,
-        "CONNECTOR_DELETE",
-        user_id=user["id"],
-        entity_type="ConnectorConfig",
-        entity_id=str(config.id),
-        metadata={"connector": config.connector_key, "name": config.name},
-    )
-    db.delete(config)
+    item = _lookup(db, config_id)
+    record_audit(db, "CONNECTOR_DELETE", user_id=user["id"], entity_type="ConnectorConfig", entity_id=str(item.id), metadata={"connector": item.connector_key})
+    db.delete(item)
     db.commit()
 
 
@@ -205,16 +150,12 @@ def test_connector_config(
     db: Session = Depends(get_db),
     user: dict = Depends(require_role(*MANAGE_ROLES)),
 ):
-    """Verify credentials and reachability without ingesting anything."""
-    config = _get_or_404(db, config_id)
+    item = _lookup(db, config_id)
     try:
-        connector = get_connector(config.connector_key)
-        plain = decrypt_config(
-            config.config or {}, secret_fields_for(config.connector_key)
-        )
-        success, message = connector.test_connection(plain)
-    except ConnectorError as exc:
-        return ConnectionTestResult(success=False, message=str(exc))
+        values = decrypt_config(item.config or {}, secret_fields_for(item.connector_key))
+        success, message = _adapter(item.connector_key).test_connection(values)
+    except ConnectorError as error:
+        success, message = False, str(error)
     return ConnectionTestResult(success=success, message=message)
 
 
@@ -224,12 +165,10 @@ def run_connector(
     db: Session = Depends(get_db),
     user: dict = Depends(require_role(*MANAGE_ROLES)),
 ):
-    """Collect now, synchronously, and return the run record."""
-    config = _get_or_404(db, config_id)
-    if not config.enabled:
+    item = _lookup(db, config_id)
+    if not item.enabled:
         raise HTTPException(status_code=409, detail="Connector is disabled")
-    run = execute_run(db, config, trigger="manual", user_id=uuid.UUID(str(user["id"])))
-    return ConnectorRunOut.model_validate(run)
+    return execute_run(db, item, user_id=uuid.UUID(str(user["id"])))
 
 
 @router.get("/{config_id}/runs", response_model=list[ConnectorRunOut])
@@ -239,12 +178,10 @@ def connector_run_history(
     db: Session = Depends(get_db),
     user: dict = Depends(require_role(*VIEW_ROLES)),
 ):
-    _get_or_404(db, config_id)
-    runs = (
+    _lookup(db, config_id)
+    return (
         db.query(ConnectorRun)
         .filter(ConnectorRun.connector_config_id == config_id)
         .order_by(ConnectorRun.started_at.desc())
-        .limit(limit)
-        .all()
+        .limit(limit).all()
     )
-    return [ConnectorRunOut.model_validate(run) for run in runs]

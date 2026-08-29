@@ -1,99 +1,76 @@
-"""Symmetric encryption for stored connector credentials.
-
-Connector configurations hold device passwords, SNMP community strings and
-SNMPv3 keys. Those must never sit in the database as plaintext, and they must
-never leave the API in a response body.
-
-Connector encryption is deliberately independent from JWT signing. A
-comma-separated key ring supports safe rotation: the first key encrypts new
-values and every retained key may decrypt existing records.
-"""
+"""Credential protection primitives for CSOS data-source integrations."""
 from __future__ import annotations
 
 import base64
 import hashlib
-import logging
+import secrets
 
 from cryptography.fernet import Fernet, InvalidToken
 
 from app.core.config import settings
 
-logger = logging.getLogger(__name__)
-
-PREFIX = "enc:v1:"
+_ENVELOPE = "enc:v1:"
+_MASK = "••••••••"
 
 
 class SecretDecryptionError(ValueError):
-    """Stored connector credentials cannot be decrypted with the active key ring."""
+    pass
 
 
-def _fernets() -> tuple[Fernet, ...]:
-    keys = settings.connector_encryption_keys
-    if not keys:
-        raise RuntimeError("CONNECTOR_ENCRYPTION_KEYS must contain at least one key")
-    return tuple(
-        Fernet(base64.urlsafe_b64encode(hashlib.sha256(key.encode("utf-8")).digest()))
-        for key in keys
-    )
+def _cipher_ring() -> list[Fernet]:
+    ring: list[Fernet] = []
+    for secret in settings.connector_encryption_keys:
+        material = hashlib.sha256(secret.encode("utf-8")).digest()
+        ring.append(Fernet(base64.urlsafe_b64encode(material)))
+    if not ring:
+        raise RuntimeError("At least one connector encryption key is required")
+    return ring
 
 
 def encrypt_secret(value: str | None) -> str | None:
-    if value in (None, ""):
+    if value in (None, "") or str(value).startswith(_ENVELOPE):
         return value
-    if isinstance(value, str) and value.startswith(PREFIX):
-        return value  # already encrypted; re-encrypting would double-wrap
-    token = _fernets()[0].encrypt(str(value).encode("utf-8")).decode("utf-8")
-    return f"{PREFIX}{token}"
+    ciphertext = _cipher_ring()[0].encrypt(str(value).encode()).decode()
+    return _ENVELOPE + ciphertext
 
 
 def decrypt_secret(value: str | None) -> str | None:
     if value in (None, ""):
         return value
-    if not str(value).startswith(PREFIX):
-        raise SecretDecryptionError("Stored connector credential is not encrypted")
-    token = str(value)[len(PREFIX) :]
-    for fernet in _fernets():
+    encoded = str(value)
+    if not encoded.startswith(_ENVELOPE):
+        raise SecretDecryptionError("Connector credential is not encrypted")
+    payload = encoded.removeprefix(_ENVELOPE).encode()
+    for cipher in _cipher_ring():
         try:
-            return fernet.decrypt(token.encode("utf-8")).decode("utf-8")
-        except (InvalidToken, ValueError):
-            continue
-    logger.warning("Unable to decrypt a connector credential with the configured key ring")
-    raise SecretDecryptionError(
-        "Connector credential cannot be decrypted; retain the prior rotation key or re-enter it"
-    )
+            return cipher.decrypt(payload).decode()
+        except InvalidToken:
+            pass
+    raise SecretDecryptionError("Connector credential cannot be opened with the active key ring")
+
+
+def _transform(config: dict, secret_fields: set[str], operation) -> dict:
+    return {
+        key: operation(value) if key in secret_fields else value
+        for key, value in dict(config or {}).items()
+    }
 
 
 def encrypt_config(config: dict, secret_fields: set[str]) -> dict:
-    """Return a copy of ``config`` with the named fields encrypted."""
-    return {
-        key: (encrypt_secret(value) if key in secret_fields else value)
-        for key, value in (config or {}).items()
-    }
+    return _transform(config, secret_fields, encrypt_secret)
 
 
 def decrypt_config(config: dict, secret_fields: set[str]) -> dict:
-    """Return a copy of ``config`` with the named fields decrypted."""
-    return {
-        key: (decrypt_secret(value) if key in secret_fields else value)
-        for key, value in (config or {}).items()
-    }
+    return _transform(config, secret_fields, decrypt_secret)
 
 
 def redact_config(config: dict, secret_fields: set[str]) -> dict:
-    """Return a copy safe to send to a client — secrets replaced by a marker."""
-    return {
-        key: ("••••••••" if key in secret_fields and value else value)
-        for key, value in (config or {}).items()
-    }
+    return _transform(config, secret_fields, lambda value: _MASK if value else value)
 
 
 def generate_api_key() -> str:
-    """Create an agent enrolment key."""
-    import secrets
-
-    return "csos_" + secrets.token_urlsafe(32)
+    return f"csos_{secrets.token_urlsafe(32)}"
 
 
 def hash_api_key(api_key: str) -> str:
-    """Store only the hash, so a database leak does not yield usable keys."""
-    return hashlib.sha256(api_key.encode("utf-8")).hexdigest()
+    return hashlib.sha256(api_key.encode()).hexdigest()

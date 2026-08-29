@@ -1,9 +1,4 @@
-"""Connector subsystem.
-
-Importing this package registers every built-in connector. Adding a new data
-source means dropping a module here that calls ``register_connector`` and
-listing it below — nothing else in the codebase changes.
-"""
+"""Public SDK for CSOS source adapters and normalized evidence records."""
 from app.connectors.base import (  # noqa: F401
     BaseConnector,
     ConfigField,
@@ -23,7 +18,7 @@ from app.connectors.models import (  # noqa: F401
     CollectionResult,
 )
 
-# Import for side effect: each module registers its connector on import.
+# Built-ins self-register when the package loads.
 from app.connectors import agent_ingest  # noqa: F401,E402
 from app.connectors import enterprise_api  # noqa: F401,E402
 from app.connectors import nmap_scan  # noqa: F401,E402

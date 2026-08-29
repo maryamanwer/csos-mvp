@@ -1,5 +1,8 @@
 # Phase 3 Completion and Deployment Guide
 
+Implementation provenance and the boundary between reference material and the
+CSOS-owned design are documented in `implementation-provenance.md`.
+
 ## Delivered application capability
 
 Phase 3 application development is complete in this repository:
