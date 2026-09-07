@@ -6,12 +6,12 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import require_role
+from app.core.security import require_permission
 from app.models.standards import Report
 from app.services.audit import record_audit
 from app.services.reporting import report_rows, render_report
 router = APIRouter(prefix='/reports', tags=['reports'])
-reader = require_role('Admin', 'ComplianceOfficer', 'Executive')
+reader = require_permission('report:read')
 
 def describe(report):
     return {'id': str(report.id), 'report_type': report.report_type, 'format': report.format,

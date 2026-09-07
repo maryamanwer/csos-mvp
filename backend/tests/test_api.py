@@ -153,6 +153,10 @@ def test_dashboard_endpoint_returns_live_summary(client, admin_headers, monkeypa
         "app.api.v1.dashboard.neo4j_client.executive_summary",
         lambda: summary,
     )
+    monkeypatch.setattr(
+        "app.services.intelligence.neo4j_client.run",
+        lambda *args, **kwargs: [],
+    )
 
     response = client.get("/api/v1/dashboard/executive", headers=admin_headers)
 

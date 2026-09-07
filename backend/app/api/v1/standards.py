@@ -3,13 +3,13 @@ import hashlib
 from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import require_role
+from app.core.security import require_permission
 from app.graph.neo4j_client import neo4j_client
 from app.models.standards import StandardsUpload
 from app.services.audit import record_audit
 from app.services.standards_ingestor import ControlInput, parse_controls
 router = APIRouter(prefix='/standards', tags=['standards'])
-editor = require_role('Admin', 'ComplianceOfficer')
+editor = require_permission('compliance:write')
 
 def persist(controls, filename, user, db):
     rows = []

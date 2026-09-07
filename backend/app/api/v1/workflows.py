@@ -4,13 +4,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import require_role, get_current_user
+from app.core.security import require_permission, get_current_user
 from app.models.workflow import Workflow
 from app.models.audit import Notification
 from app.graph.neo4j_client import neo4j_client
 from app.services.audit import record_audit
 router = APIRouter(tags=['workflows'])
-editor = require_role('Admin', 'Analyst', 'Engineer', 'ComplianceOfficer')
+editor = require_permission('workflow:manage')
 class TaskInput(BaseModel):
     title: str = Field(min_length=1, max_length=255)
     asset_id: str | None = Field(None, max_length=100)

@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, Query
-from app.core.security import require_role
+from app.core.security import require_permission
 from app.schemas.risk_compliance import ComplianceFrameworkCoverage
 from app.services.intelligence import coverage, gaps
 router = APIRouter(prefix='/compliance', tags=['compliance'])
-reader = require_role('Admin', 'ComplianceOfficer', 'Executive')
+reader = require_permission('compliance:read')
 @router.get('/coverage', response_model=list[ComplianceFrameworkCoverage])
 def framework_coverage(user=Depends(reader)):
     return coverage()

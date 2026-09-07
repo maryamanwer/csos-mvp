@@ -177,6 +177,39 @@ MERGE (a2)-[:DEPENDS_ON]->(a1)
 MERGE (a2)-[:COMMUNICATES_WITH]->(a3)
 MERGE (a4)-[:CONNECTS_TO]->(a5);
 
+// Built-in initial-release framework catalogs. These provide the official
+// top-level NIST CSF 2.0 Functions and CIS Controls v8 control families. Teams
+// can add organization-specific requirements and safeguards through Standards.
+MERGE (nist:Framework {id: 'framework-nist-csf'})
+  SET nist.name = 'NIST CSF', nist.version = '2.0', nist.built_in = true;
+UNWIND [
+  ['GV','Govern'], ['ID','Identify'], ['PR','Protect'], ['DE','Detect'],
+  ['RS','Respond'], ['RC','Recover']
+] AS item
+MERGE (control:Control {id: 'nist-csf-2-' + toLower(item[0])})
+SET control.reference = item[0], control.name = item[1], control.source = 'NIST_CSF_2_0',
+    control.status = coalesce(control.status, 'not_implemented'), control.built_in = true
+MERGE (control)-[:PART_OF]->(nist);
+
+MERGE (cis:Framework {id: 'framework-cis-controls'})
+  SET cis.name = 'CIS Controls', cis.version = '8', cis.built_in = true;
+UNWIND [
+  ['1','Inventory and Control of Enterprise Assets'],
+  ['2','Inventory and Control of Software Assets'],
+  ['3','Data Protection'], ['4','Secure Configuration of Enterprise Assets and Software'],
+  ['5','Account Management'], ['6','Access Control Management'],
+  ['7','Continuous Vulnerability Management'], ['8','Audit Log Management'],
+  ['9','Email and Web Browser Protections'], ['10','Malware Defenses'],
+  ['11','Data Recovery'], ['12','Network Infrastructure Management'],
+  ['13','Network Monitoring and Defense'], ['14','Security Awareness and Skills Training'],
+  ['15','Service Provider Management'], ['16','Application Software Security'],
+  ['17','Incident Response Management'], ['18','Penetration Testing']
+] AS item
+MERGE (control:Control {id: 'cis-v8-' + item[0]})
+SET control.reference = item[0], control.name = item[1], control.source = 'CIS_CONTROLS_V8',
+    control.status = coalesce(control.status, 'not_implemented'), control.built_in = true
+MERGE (control)-[:PART_OF]->(cis);
+
 // ============================================================
 // EXAMPLE QUERIES
 // ============================================================

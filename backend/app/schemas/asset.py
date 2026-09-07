@@ -2,8 +2,9 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-AssetType = Literal["server", "application", "network_device", "database", "cloud_resource"]
+AssetType = Literal["server", "application", "network_device", "identity", "database", "cloud_resource"]
 Criticality = Literal["low", "medium", "high", "critical"]
+DataSensitivity = Literal["public", "internal", "confidential", "restricted"]
 
 
 class AssetCreate(BaseModel):
@@ -11,6 +12,7 @@ class AssetCreate(BaseModel):
     type: AssetType
     environment: str = Field(min_length=2, max_length=100)
     criticality: Criticality
+    data_sensitivity: DataSensitivity = "internal"
     exposure: Literal["internal", "partner", "internet"] = "internal"
     owner: Optional[str] = Field(default=None, max_length=255)
     ip_address: Optional[str] = Field(default=None, max_length=64)
@@ -22,6 +24,7 @@ class AssetUpdate(BaseModel):
     type: AssetType | None = None
     environment: str | None = Field(default=None, min_length=2, max_length=100)
     criticality: Criticality | None = None
+    data_sensitivity: DataSensitivity | None = None
     exposure: Literal["internal", "partner", "internet"] | None = None
     owner: str | None = Field(default=None, max_length=255)
     ip_address: str | None = Field(default=None, max_length=64)
@@ -61,3 +64,9 @@ class BulkImportResult(BaseModel):
     imported: int
     failed: int
     errors: list[BulkImportError] = Field(default_factory=list)
+
+
+class RelationshipImportRow(BaseModel):
+    source_id: str = Field(min_length=1, max_length=255)
+    target_id: str = Field(min_length=1, max_length=255)
+    relationship_type: Literal["CONNECTS_TO", "DEPENDS_ON", "HOSTS", "COMMUNICATES_WITH"]

@@ -3,7 +3,7 @@ import httpx
 import ollama
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.core.security import get_current_user
+from app.core.security import require_permission
 from app.core.database import get_db
 from app.models.conversation import Conversation
 from app.schemas.risk_compliance import ChatRequest
@@ -13,7 +13,7 @@ from app.ai.providers import resolve_model, ModelSelectionError
 router = APIRouter(prefix='/chat', tags=['chat'])
 
 @router.post('')
-def chat(payload: ChatRequest, user=Depends(get_current_user), db: Session=Depends(get_db)):
+def chat(payload: ChatRequest, user=Depends(require_permission('chat:use')), db: Session=Depends(get_db)):
     if not payload.message.strip(): raise HTTPException(422, 'Message must not be blank')
     try: resolve_model(payload.model)
     except ModelSelectionError as exc: raise HTTPException(422, str(exc))

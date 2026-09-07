@@ -11,17 +11,26 @@ docker compose exec ollama ollama pull llama3.1
 
 Open http://localhost:3000. Development login: admin@csos.com / csos-demo. API docs: http://localhost:8000/docs. A model download requires network access and sufficient disk/RAM. For an air-gapped site, prepare container images and model weights on a connected staging machine and transfer them through your approved process before starting the site.
 
+### GitHub Codespaces
+
+The repository includes `.devcontainer/devcontainer.json` with Docker-in-Docker
+and forwarded ports. Create a Codespace, run the same Compose commands above,
+then open the forwarded **CSOS Web** port. Keep all forwarded ports private.
+A 4-core/16-GB Codespace is recommended for Ollama; smaller machines can run the
+platform while AI remains unavailable until a suitable model runtime is present.
+
 Compose starts PostgreSQL and Neo4j, imports the graph seed, and runs the backend database bootstrap. Bootstrap creates the new conversation/workflow tables on startup. Existing table alterations still need reviewed migrations; this is not a production migration framework.
 
 ## Walkthrough
 
 1. Log in as Admin and create an asset. Set its criticality and exposure.
 2. Create a vulnerability linked to the asset. Open Risk Dashboard and inspect the formula.
-3. Open Custom Standards. Enter a reference ID, name, framework, and semicolon-separated asset IDs. Save; inspect Compliance and Topology.
-4. Ask Chat about assets. Check selected model, agent trace and evidence IDs. Ask a follow-up in the same page session.
-5. Generate PDF and Excel reports. Download both from history.
-6. Create a workflow and progress open → in_progress → resolved → closed. Read its notification.
-7. Sign in as another user and verify private report/workflow records are inaccessible.
+3. Import `docs/samples/relationships-import.csv`, then inspect Network Topology.
+4. Open Custom Standards. Enter a reference ID, name, framework, and semicolon-separated asset IDs. Save; inspect Compliance and Topology.
+5. Ask Chat about assets. Check selected model, agent trace and evidence IDs. Ask a follow-up in the same page session.
+6. Generate PDF and Excel reports. Download both from history.
+7. Create a workflow and progress open → in_progress → resolved → closed. Read its notification.
+8. Sign in as another user and verify private report/workflow records are inaccessible.
 
 ## Troubleshooting
 

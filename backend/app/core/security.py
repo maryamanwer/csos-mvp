@@ -98,6 +98,7 @@ def get_current_user(
         "email": user.email,
         "full_name": user.full_name,
         "role": user.role.name,
+        "permissions": sorted(permission.code for permission in user.role.permissions),
         "is_active": user.is_active,
     }
 
@@ -113,4 +114,13 @@ def require_role(*allowed_roles: str):
             raise HTTPException(status_code=403, detail="Insufficient permissions")
         return user
 
+    return _checker
+
+
+def require_permission(permission_code: str):
+    """Authorize from the role-permission records edited in Administration."""
+    async def _checker(user: dict = Depends(get_current_user)) -> dict:
+        if user.get("role") != "Admin" and permission_code not in user.get("permissions", []):
+            raise HTTPException(status_code=403, detail="Insufficient permissions")
+        return user
     return _checker

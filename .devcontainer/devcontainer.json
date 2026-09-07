@@ -1,0 +1,16 @@
+{
+  "name": "CSOS Development",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "forwardPorts": [3000, 8000, 7474, 7687, 11434],
+  "portsAttributes": {
+    "3000": { "label": "CSOS Web", "onAutoForward": "openBrowser" },
+    "8000": { "label": "CSOS API" },
+    "7474": { "label": "Neo4j Browser" },
+    "11434": { "label": "Ollama" }
+  },
+  "postCreateCommand": "docker compose config --quiet",
+  "remoteUser": "vscode"
+}

@@ -73,6 +73,11 @@ export const importAssets = (file: File) => {
   body.append("file", file);
   return api.post("/assets/import", body);
 };
+export const importAssetRelationships = (file: File) => {
+  const body = new FormData();
+  body.append("file", file);
+  return api.post("/assets/relationships/import", body);
+};
 export const createAssetRelationship = (
   sourceId: string,
   payload: Record<string, unknown>,
@@ -125,3 +130,4 @@ export const listRoles = () => api.get("/admin/roles");
 export const updateRole = (id: string, payload: Record<string, unknown>) =>
   api.put(`/admin/roles/${id}`, payload);
 export const auditLog = () => api.get("/admin/audit-log");
+export const getSystemSettings = () => api.get("/admin/settings");

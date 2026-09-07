@@ -16,15 +16,15 @@ import { useAuth } from "@/contexts/AuthContext";
 const DRAWER_WIDTH = 240;
 
 const NAV_ITEMS = [
-  { label: "Workflows", path: "/workflows", icon: <SecurityIcon />, roles: ["Admin", "Analyst", "Engineer", "ComplianceOfficer"] },
+  { label: "Workflows", path: "/workflows", icon: <SecurityIcon />, roles: ["Admin", "Analyst", "Engineer", "SecurityArchitect", "ComplianceOfficer"] },
   { label: "Executive Dashboard", path: "/dashboard/executive", icon: <DashboardIcon />, roles: ["Admin", "Executive"] },
-  { label: "Analyst Dashboard", path: "/dashboard/analyst", icon: <DashboardIcon />, roles: ["Admin", "Analyst", "Engineer"] },
-  { label: "Asset Inventory", path: "/assets", icon: <StorageIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
-  { label: "Network Topology", path: "/topology", icon: <AccountTreeIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive", "ComplianceOfficer"] },
-  { label: "Vulnerabilities", path: "/vulnerabilities", icon: <BugReportIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
-  { label: "Risk Dashboard", path: "/risk", icon: <SecurityIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },
-  { label: "Compliance", path: "/compliance", icon: <PolicyIcon />, roles: ["Admin", "ComplianceOfficer", "Executive"] },
-  { label: "AI Chat Assistant", path: "/chat", icon: <ChatIcon />, roles: ["Admin", "Analyst", "Engineer", "ComplianceOfficer", "Executive"] },
+  { label: "Analyst Dashboard", path: "/dashboard/analyst", icon: <DashboardIcon />, roles: ["Admin", "Analyst", "Engineer", "SecurityArchitect"] },
+  { label: "Asset Inventory", path: "/assets", icon: <StorageIcon />, roles: ["Admin", "Analyst", "Engineer", "SecurityArchitect", "Executive"] },
+  { label: "Network Topology", path: "/topology", icon: <AccountTreeIcon />, roles: ["Admin", "Analyst", "Engineer", "SecurityArchitect", "Executive", "ComplianceOfficer"] },
+  { label: "Vulnerabilities", path: "/vulnerabilities", icon: <BugReportIcon />, roles: ["Admin", "Analyst", "Engineer", "SecurityArchitect", "Executive"] },
+  { label: "Risk Dashboard", path: "/risk", icon: <SecurityIcon />, roles: ["Admin", "Analyst", "Engineer", "SecurityArchitect", "Executive"] },
+  { label: "Compliance", path: "/compliance", icon: <PolicyIcon />, roles: ["Admin", "SecurityArchitect", "ComplianceOfficer", "Executive"] },
+  { label: "AI Chat Assistant", path: "/chat", icon: <ChatIcon />, roles: ["Admin", "Analyst", "Engineer", "SecurityArchitect", "ComplianceOfficer", "Executive"] },
   { label: "Custom Standards", path: "/standards", icon: <UploadFileIcon />, roles: ["Admin", "ComplianceOfficer"] },
   { label: "Reports", path: "/reports", icon: <DescriptionIcon />, roles: ["Admin", "ComplianceOfficer", "Executive"] },
   { label: "Administration", path: "/admin", icon: <AdminPanelSettingsIcon />, roles: ["Admin"] },

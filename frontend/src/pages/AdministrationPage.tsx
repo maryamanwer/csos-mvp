@@ -33,6 +33,7 @@ import {
   listUsers,
   updateRole,
   updateUser,
+  getSystemSettings,
 } from "@/services/api";
 import { AuditEntry, Role, RoleInfo, User } from "@/types";
 
@@ -57,16 +58,18 @@ export const AdministrationPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [roles, setRoles] = useState<RoleInfo[]>([]);
   const [logs, setLogs] = useState<AuditEntry[]>([]);
+  const [settings, setSettings] = useState<Record<string, unknown>>({});
   const [dialogOpen, setDialogOpen] = useState(false);
   const [draft, setDraft] = useState<UserDraft>(EMPTY_USER);
   const [message, setMessage] = useState<{ severity: "success" | "error"; text: string } | null>(null);
 
   const load = useCallback(() => {
-    Promise.all([listUsers(), listRoles(), auditLog()])
-      .then(([userResponse, roleResponse, auditResponse]) => {
+    Promise.all([listUsers(), listRoles(), auditLog(), getSystemSettings()])
+      .then(([userResponse, roleResponse, auditResponse, settingsResponse]) => {
         setUsers(userResponse.data);
         setRoles(roleResponse.data);
         setLogs(auditResponse.data);
+        setSettings(settingsResponse.data);
       })
       .catch(() => setMessage({ severity: "error", text: "Administration data could not be loaded." }));
   }, []);
@@ -203,7 +206,13 @@ export const AdministrationPage = () => {
 
       {tab === 3 && <Card><CardContent>
         <Typography variant="h6">Operational Settings</Typography>
-        <Typography color="text.secondary">Authentication, model providers, database connections, and import limits are managed through the documented environment configuration.</Typography>
+        <Typography color="text.secondary" sx={{ mb: 2 }}>Effective non-secret configuration. Change deployment values through Codespaces secrets or the backend environment file, then restart the service.</Typography>
+        <Box sx={{ display: "grid", gridTemplateColumns: "minmax(180px, 260px) 1fr", gap: 1 }}>
+          {Object.entries(settings).map(([key, value]) => <React.Fragment key={key}>
+            <Typography fontWeight={600}>{key.replace(/_/g, " ")}</Typography>
+            <Typography sx={{ overflowWrap: "anywhere" }}>{Array.isArray(value) ? value.join(", ") : String(value)}</Typography>
+          </React.Fragment>)}
+        </Box>
       </CardContent></Card>}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">

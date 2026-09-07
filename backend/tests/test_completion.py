@@ -155,3 +155,35 @@ def test_chat_discards_history_from_previous_role(client,admin_headers,db_sessio
     response=client.post('/api/v1/chat',headers=admin_headers,json={'message':'assets','conversation_id':str(conversation.id)})
     assert response.status_code==200
     assert seen==[]
+
+
+def test_security_architect_and_system_settings_are_available(client, admin_headers):
+    roles = client.get('/api/v1/admin/roles', headers=admin_headers).json()
+    architect = next(role for role in roles if role['name'] == 'SecurityArchitect')
+    assert {'asset:write', 'risk:read', 'compliance:read'} <= set(architect['permission_codes'])
+    settings = client.get('/api/v1/admin/settings', headers=admin_headers)
+    assert settings.status_code == 200
+    assert 'JWT_SECRET_KEY' not in settings.text
+
+
+def test_relationship_file_import(client, admin_headers, monkeypatch):
+    monkeypatch.setattr(
+        'app.api.v1.assets.neo4j_client.create_asset_relationship',
+        lambda source, target, kind, properties: {
+            'id': 'rel-1', 'source_id': source, 'target_id': target,
+            'relationship_type': kind, 'properties': properties,
+        },
+    )
+    response = client.post(
+        '/api/v1/assets/relationships/import', headers=admin_headers,
+        files={'file': ('relationships.csv', b'source_id,target_id,relationship_type\na1,a2,depends_on\n', 'text/csv')},
+    )
+    assert response.status_code == 200
+    assert response.json()['imported'] == 1
+
+
+def test_asset_schema_supports_identity_and_sensitivity():
+    from app.schemas.asset import AssetCreate
+    asset = AssetCreate(name='Privileged identity', type='identity', environment='production',
+                        criticality='critical', data_sensitivity='restricted')
+    assert asset.data_sensitivity == 'restricted'

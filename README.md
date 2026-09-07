@@ -1,21 +1,34 @@
-# Current handover
-
-This source includes additional implementation beyond the original Phase 2 release. Read [the implementation review](docs/completion-review.md) for delivered features and remaining work, and [operations](docs/operations.md) for startup and validation. The original release description below is historical and does not establish completion of later phases.
-
 # Cyber Security Operating System (CSOS)
 
 CSOS is an air-gapped-ready cybersecurity platform that combines a React web
 application, FastAPI services, PostgreSQL, a Neo4j Cyber Knowledge Graph, and a
 provider-independent AI layer with Ollama as the default local runtime.
 
-**Status: Implementation Phase 2 (Core Platform Development) is complete and
-ready for stakeholder demonstration.** The repository now includes persistent
-authentication, RBAC administration, live dashboards, asset and vulnerability
-management, Neo4j relationship management, bulk imports, audit history, and the
-interactive Network Topology delivered in Phase 1.
+**Status: the Initial Release defined in the Business Analysis Document is
+implemented and ready for stakeholder acceptance testing.** Live enterprise
+connectors, automated discovery, attack-path generation, high availability and
+mobile clients remain future-phase capabilities as defined in the approved scope.
 
-AI intelligence, advanced graph analytics, reporting, and remaining workflow
-automation are explicitly scheduled in Phases 3 and 4.
+The release includes persistent authentication, database-backed RBAC,
+role-aware dashboards, asset/identity and vulnerability management, Neo4j
+topology, explainable risk scoring, compliance gap analysis, custom standards,
+LangGraph/Ollama assistance, PDF/Excel reporting, remediation workflows and
+audit history. See [client acceptance](docs/client-acceptance.md) and
+[operations](docs/operations.md).
+
+## Run in GitHub Codespaces
+
+Create a Codespace for this branch. The included development-container setup
+provides Docker inside the Codespace and forwards the application ports. Then run:
+
+```bash
+docker compose up --build -d
+docker compose exec ollama ollama pull llama3.1
+docker compose ps
+```
+
+Open the forwarded **CSOS Web** port 3000 and keep port visibility private.
+Use a Codespace with at least 4 cores and 16 GB RAM when demonstrating local AI.
 
 ## Phase 1 deliverables
 
@@ -112,8 +125,8 @@ npm run dev
 | Network Topology API and interactive graph screen | Implemented; generated from Neo4j relationships |
 | Asset relationship topology tab | Implemented; focuses the selected asset's neighborhood |
 | Provider-independent model boundary | Implemented; Ollama default with configurable compatible models |
-| LangGraph orchestrator | Compiles; model-driven reasoning and streaming are Phase 3 |
-| Risk, compliance, reporting, standards ingestion | Foundations exist; advanced intelligence and delivery follow Phases 3 and 4 |
+| LangGraph orchestrator | Role-grounded Asset, Risk and Compliance agents with evidence and history |
+| Risk, compliance, reporting, standards ingestion | Implemented for the agreed Initial Release scope |
 
 ## AI model configuration
 

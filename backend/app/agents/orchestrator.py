@@ -15,6 +15,7 @@ def _classify_intent(state):
     if any(w in q for w in ('complian', 'control', 'framework', 'iso', 'nist', 'policy')): requested.append('compliance')
     allowed = {'Admin': ['asset', 'risk', 'compliance'], 'Executive': ['asset', 'risk', 'compliance'],
                'Analyst': ['asset', 'risk'], 'Engineer': ['asset', 'risk'],
+               'SecurityArchitect': ['asset', 'risk', 'compliance'],
                'ComplianceOfficer': ['asset', 'compliance']}.get(state['user_role'], [])
     state['routes'] = [r for r in (requested or allowed) if r in allowed]
     state['agent_trace'] = ['orchestrator']

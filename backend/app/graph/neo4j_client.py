@@ -58,8 +58,12 @@ class Neo4jClient:
               AND ($asset_type IS NULL OR a.type = $asset_type)
               AND ($criticality IS NULL OR a.criticality = $criticality)
               AND ($environment IS NULL OR a.environment = $environment)
-            OPTIONAL MATCH (r:Risk)-[:AFFECTS]->(a)
-            RETURN properties(a) AS asset, max(toFloat(r.score)) AS risk_score
+            OPTIONAL MATCH (a)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            WITH a, max(CASE WHEN v.status IN ['resolved','closed','accepted','mitigated','false_positive'] THEN 0
+                       ELSE coalesce(toFloat(v.cvss_score), CASE v.severity WHEN 'critical' THEN 10 WHEN 'high' THEN 8 WHEN 'medium' THEN 5 WHEN 'low' THEN 2 ELSE 0 END) END) AS severity
+            RETURN properties(a) AS asset,
+              round(severity * 10 * CASE a.criticality WHEN 'critical' THEN 1.0 WHEN 'high' THEN 0.8 WHEN 'low' THEN 0.4 ELSE 0.6 END
+                * CASE a.exposure WHEN 'internet' THEN 1.0 WHEN 'partner' THEN 0.8 ELSE 0.6 END, 1) AS risk_score
             ORDER BY asset.name
             SKIP $offset LIMIT $limit
             """,
@@ -78,8 +82,12 @@ class Neo4jClient:
         rows = self.run(
             """
             MATCH (a:Asset {id: $id})
-            OPTIONAL MATCH (r:Risk)-[:AFFECTS]->(a)
-            RETURN properties(a) AS asset, max(toFloat(r.score)) AS risk_score
+            OPTIONAL MATCH (a)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            WITH a, max(CASE WHEN v.status IN ['resolved','closed','accepted','mitigated','false_positive'] THEN 0
+                       ELSE coalesce(toFloat(v.cvss_score), CASE v.severity WHEN 'critical' THEN 10 WHEN 'high' THEN 8 WHEN 'medium' THEN 5 WHEN 'low' THEN 2 ELSE 0 END) END) AS severity
+            RETURN properties(a) AS asset,
+              round(severity * 10 * CASE a.criticality WHEN 'critical' THEN 1.0 WHEN 'high' THEN 0.8 WHEN 'low' THEN 0.4 ELSE 0.6 END
+                * CASE a.exposure WHEN 'internet' THEN 1.0 WHEN 'partner' THEN 0.8 ELSE 0.6 END, 1) AS risk_score
             """,
             {"id": asset_id},
         )
@@ -109,8 +117,12 @@ class Neo4jClient:
             MATCH (a:Asset {id: $id})
             SET a += $properties, a.updated_at = datetime()
             WITH a
-            OPTIONAL MATCH (r:Risk)-[:AFFECTS]->(a)
-            RETURN properties(a) AS asset, max(toFloat(r.score)) AS risk_score
+            OPTIONAL MATCH (a)-[:HAS_VULNERABILITY]->(v:Vulnerability)
+            WITH a, max(CASE WHEN v.status IN ['resolved','closed','accepted','mitigated','false_positive'] THEN 0
+                       ELSE coalesce(toFloat(v.cvss_score), CASE v.severity WHEN 'critical' THEN 10 WHEN 'high' THEN 8 WHEN 'medium' THEN 5 WHEN 'low' THEN 2 ELSE 0 END) END) AS severity
+            RETURN properties(a) AS asset,
+              round(severity * 10 * CASE a.criticality WHEN 'critical' THEN 1.0 WHEN 'high' THEN 0.8 WHEN 'low' THEN 0.4 ELSE 0.6 END
+                * CASE a.exposure WHEN 'internet' THEN 1.0 WHEN 'partner' THEN 0.8 ELSE 0.6 END, 1) AS risk_score
             """,
             {"id": asset_id, "properties": properties},
         )

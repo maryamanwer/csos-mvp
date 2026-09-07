@@ -20,6 +20,7 @@ The existing implementation provides login and refresh tokens, user administrati
 | Standards | Read file bytes and returned “received” | Validated CSV/XLSX/JSON/Word-table and structured-text PDF parsing, control upserts, framework and asset mappings, upload history and manual entry |
 | Remediation | No workflow implementation | Owner-specific tasks, validated transitions, stale-update detection, audit records and in-app notifications |
 | Role bootstrap | Reset edited permission lists on restart | Preserve administrator changes when reseeding existing roles |
+| Business alignment | Missing Security Architect, sensitivity, relationship import and Codespaces setup | Added the sixth stakeholder role, identity/sensitivity classification, relationship-file import, effective settings and Codespaces configuration |
 | Validation | 17 original tests | Added behavioral tests for the new flows and access isolation |
 
 ## Important behavior and limits
@@ -32,11 +33,11 @@ The existing implementation provides login and refresh tokens, user administrati
 - PDF import requires selectable text with `id | name | framework` header and pipe-separated rows. Arbitrary prose, scanned PDFs and OCR are not supported. Word import requires a table. The importer does not infer obligations or automatically certify compliance.
 - Standards are validated before graph changes. Neo4j and PostgreSQL do not share one distributed transaction; a failure between systems requires checking upload history and retrying. Stable framework/control keys make graph retries upserts.
 - Workflows and notifications are in-app and owner-specific. No email, Slack or external messages are sent.
-- Existing endpoints primarily enforce fixed role allow-lists. Editable permission records do not yet dynamically control every route; the role editor should not be treated as a complete configurable authorization policy engine.
+- Core asset, vulnerability, risk, compliance, standards, reporting, topology, chat and workflow endpoints enforce database-backed permissions. Administrator-only identity and audit operations retain an explicit administrator boundary.
 
 ## Verification
 
-36 backend tests passed, including conversation-role isolation. Backend tests use SQLite and mocked graph/model boundaries. They verify application behavior but do not prove real Neo4j Cypher execution or model quality. The frontend TypeScript check and Vite production build pass. Vite reports a large bundle warning.
+39 backend tests passed, including conversation-role isolation and the business-alignment additions. Backend tests use SQLite and mocked graph/model boundaries. They verify application behavior but do not prove real Neo4j Cypher execution or model quality. The frontend TypeScript check and Vite production build pass. Vite reports a large bundle warning.
 
 Docker, live PostgreSQL, Neo4j and Ollama were not available on this host. Full Compose startup, real graph import transactions, live inference, browser end-to-end behavior, production security review, and model-family evaluation remain unverified. This delivery is not a claim that every Phase 3/4 checkbox or production acceptance requirement is complete.
 
@@ -44,9 +45,9 @@ Docker, live PostgreSQL, Neo4j and Ollama were not available on this host. Full 
 
 1. Run the full Compose integration walkthrough against real services and fix any integration failures.
 2. Stream model responses; add model-driven routing/tool selection, server-side citation validation, and larger-inventory retrieval.
-3. Synchronize calculated risk assessments with persisted Risk nodes and executive widgets; complete risk visualization and scoring acceptance.
-4. Finish general Identity/Policy/Framework administration, advanced graph/path queries and relationship bulk imports.
-5. Complete dynamic permission enforcement, production migrations, system-settings administration, monitoring and end-to-end/security tests.
+3. Complete stakeholder acceptance of risk scoring and visual presentation on representative client data.
+4. Add general Policy administration and advanced graph/path queries if required after the initial release.
+5. Complete production migrations, monitoring and end-to-end/security tests before production deployment.
 6. Add arbitrary-policy extraction/OCR and human review of inferred control mappings if those formats are required.
 7. Configure real scanner/directory/cloud/ITSM connectors once target systems and credentials are supplied. Requirements classify live integrations and discovery as beyond the core platform.
 8. Validate chosen local models on the deployment hardware; perform stakeholder acceptance and source release.

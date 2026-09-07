@@ -1,0 +1,3 @@
+source_id,target_id,relationship_type
+asset-002,asset-001,DEPENDS_ON
+asset-002,asset-003,COMMUNICATES_WITH

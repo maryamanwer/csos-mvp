@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import require_role
+from app.core.security import require_permission
 from app.graph.neo4j_client import neo4j_client
 from app.schemas.asset import BulkImportError, BulkImportResult
 from app.schemas.vulnerability import (
@@ -16,8 +16,8 @@ from app.services.audit import record_audit
 from app.services.imports import parse_tabular_upload
 
 router = APIRouter(prefix="/vulnerabilities", tags=["vulnerabilities"])
-READ_ROLES = ("Admin", "Engineer", "Analyst", "Executive")
-WRITE_ROLES = ("Admin", "Analyst", "Engineer")
+vulnerability_reader = require_permission("vulnerability:read")
+vulnerability_writer = require_permission("vulnerability:write")
 
 
 @router.get("", response_model=list[VulnerabilityOut])
@@ -28,7 +28,7 @@ def list_vulnerabilities(
     asset_id: str | None = Query(default=None),
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=500),
-    user: dict = Depends(require_role(*READ_ROLES)),
+    user: dict = Depends(vulnerability_reader),
 ):
     return neo4j_client.list_vulnerabilities(
         search=search,
@@ -43,7 +43,7 @@ def list_vulnerabilities(
 @router.post("", response_model=VulnerabilityOut, status_code=status.HTTP_201_CREATED)
 def create_vulnerability(
     payload: VulnerabilityCreate,
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(vulnerability_writer),
     db: Session = Depends(get_db),
 ):
     properties = payload.model_dump(exclude={"asset_ids"})
@@ -63,7 +63,7 @@ def create_vulnerability(
 @router.post("/import", response_model=BulkImportResult)
 async def import_vulnerabilities(
     file: UploadFile = File(...),
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(vulnerability_writer),
     db: Session = Depends(get_db),
 ):
     try:
@@ -105,7 +105,7 @@ async def import_vulnerabilities(
 @router.get("/{vulnerability_id}", response_model=VulnerabilityOut)
 def get_vulnerability(
     vulnerability_id: str,
-    user: dict = Depends(require_role(*READ_ROLES)),
+    user: dict = Depends(vulnerability_reader),
 ):
     vulnerability = neo4j_client.get_vulnerability(vulnerability_id)
     if not vulnerability:
@@ -117,7 +117,7 @@ def get_vulnerability(
 def update_vulnerability(
     vulnerability_id: str,
     payload: VulnerabilityUpdate,
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(vulnerability_writer),
     db: Session = Depends(get_db),
 ):
     values = payload.model_dump(exclude_unset=True)
@@ -144,7 +144,7 @@ def update_vulnerability(
 @router.delete("/{vulnerability_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_vulnerability(
     vulnerability_id: str,
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(vulnerability_writer),
     db: Session = Depends(get_db),
 ):
     if not neo4j_client.delete_vulnerability(vulnerability_id):
