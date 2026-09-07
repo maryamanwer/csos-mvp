@@ -60,6 +60,8 @@ services:
   backend:
     build: ./backend
     env_file: ./backend/.env.example
+    volumes:
+      - reportsdata:/app/data/reports
     environment:
       POSTGRES_HOST: postgres
       NEO4J_URI: bolt://neo4j:7687
@@ -91,3 +93,4 @@ volumes:
   pgdata:
   neo4jdata:
   ollamadata:
+  reportsdata:

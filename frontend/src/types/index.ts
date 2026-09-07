@@ -21,6 +21,7 @@ export interface Asset {
   owner?: string;
   ip_address?: string;
   description?: string;
+  exposure?: "internal" | "partner" | "internet";
   risk_score?: number;
 }
 

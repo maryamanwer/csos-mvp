@@ -11,6 +11,7 @@ class AssetCreate(BaseModel):
     type: AssetType
     environment: str = Field(min_length=2, max_length=100)
     criticality: Criticality
+    exposure: Literal["internal", "partner", "internet"] = "internal"
     owner: Optional[str] = Field(default=None, max_length=255)
     ip_address: Optional[str] = Field(default=None, max_length=64)
     description: Optional[str] = Field(default=None, max_length=2000)
@@ -21,6 +22,7 @@ class AssetUpdate(BaseModel):
     type: AssetType | None = None
     environment: str | None = Field(default=None, min_length=2, max_length=100)
     criticality: Criticality | None = None
+    exposure: Literal["internal", "partner", "internet"] | None = None
     owner: str | None = Field(default=None, max_length=255)
     ip_address: str | None = Field(default=None, max_length=64)
     description: str | None = Field(default=None, max_length=2000)

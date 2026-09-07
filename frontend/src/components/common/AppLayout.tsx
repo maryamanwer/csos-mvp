@@ -16,6 +16,7 @@ import { useAuth } from "@/contexts/AuthContext";
 const DRAWER_WIDTH = 240;
 
 const NAV_ITEMS = [
+  { label: "Workflows", path: "/workflows", icon: <SecurityIcon />, roles: ["Admin", "Analyst", "Engineer", "ComplianceOfficer"] },
   { label: "Executive Dashboard", path: "/dashboard/executive", icon: <DashboardIcon />, roles: ["Admin", "Executive"] },
   { label: "Analyst Dashboard", path: "/dashboard/analyst", icon: <DashboardIcon />, roles: ["Admin", "Analyst", "Engineer"] },
   { label: "Asset Inventory", path: "/assets", icon: <StorageIcon />, roles: ["Admin", "Analyst", "Engineer", "Executive"] },

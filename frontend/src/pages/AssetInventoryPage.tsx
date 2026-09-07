@@ -45,6 +45,7 @@ const EMPTY_ASSET: AssetDraft = {
   environment: "production",
   criticality: "medium",
   owner: "",
+  exposure: "internal",
 };
 
 export const AssetInventoryPage = () => {
@@ -80,6 +81,7 @@ export const AssetInventoryPage = () => {
       environment: asset.environment,
       criticality: asset.criticality,
       owner: asset.owner ?? "",
+      exposure: asset.exposure ?? "internal",
     });
     setDialogOpen(true);
   };
@@ -197,6 +199,9 @@ export const AssetInventoryPage = () => {
           <TextField label="Environment" value={draft.environment} onChange={(event) => setDraft({ ...draft, environment: event.target.value })} required />
           <TextField select label="Criticality" value={draft.criticality} onChange={(event) => setDraft({ ...draft, criticality: event.target.value as AssetDraft["criticality"] })}>
             {["low", "medium", "high", "critical"].map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+          </TextField>
+          <TextField select label="Exposure" value={draft.exposure ?? "internal"} onChange={event => setDraft({...draft, exposure: event.target.value as AssetDraft["exposure"]})}>
+            {["internal", "partner", "internet"].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}
           </TextField>
           <TextField label="Owner" value={draft.owner ?? ""} onChange={(event) => setDraft({ ...draft, owner: event.target.value })} />
         </DialogContent>

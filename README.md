@@ -1,3 +1,7 @@
+# Current handover
+
+This source includes additional implementation beyond the original Phase 2 release. Read [the implementation review](docs/completion-review.md) for delivered features and remaining work, and [operations](docs/operations.md) for startup and validation. The original release description below is historical and does not establish completion of later phases.
+
 # Cyber Security Operating System (CSOS)
 
 CSOS is an air-gapped-ready cybersecurity platform that combines a React web

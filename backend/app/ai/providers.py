@@ -28,7 +28,7 @@ class OllamaModelProvider(ModelProvider):
     """Local Ollama adapter supporting any configured compatible model."""
 
     def __init__(self, base_url: str | None = None):
-        self._client = ollama.Client(host=base_url or settings.OLLAMA_BASE_URL)
+        self._client = ollama.Client(host=base_url or settings.OLLAMA_BASE_URL, timeout=120)
 
     def generate(self, prompt: str, model: str | None = None) -> str:
         selected_model = resolve_model(model)

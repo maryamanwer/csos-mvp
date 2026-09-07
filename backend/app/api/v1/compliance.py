@@ -1,20 +1,12 @@
-"""
-Compliance Engine endpoints (core platform scaffold).
-TODO(P4): compute real coverage_pct from Control/Framework graph relationships.
-"""
-from fastapi import APIRouter, Depends
-
+from fastapi import APIRouter, Depends, Query
 from app.core.security import require_role
 from app.schemas.risk_compliance import ComplianceFrameworkCoverage
-
-router = APIRouter(prefix="/compliance", tags=["compliance"])
-
-
-@router.get("/coverage", response_model=list[ComplianceFrameworkCoverage])
-def framework_coverage(user: dict = Depends(require_role("Admin", "ComplianceOfficer", "Executive"))):
-    # TODO(P4): replace with real Neo4j aggregation:
-    # MATCH (c:Control)-[:PART_OF]->(f:Framework) ... count met vs total
-    return [
-        ComplianceFrameworkCoverage(framework="ISO 27001", total_controls=93, controls_met=61, coverage_pct=65.6),
-        ComplianceFrameworkCoverage(framework="NIST CSF", total_controls=108, controls_met=70, coverage_pct=64.8),
-    ]
+from app.services.intelligence import coverage, gaps
+router = APIRouter(prefix='/compliance', tags=['compliance'])
+reader = require_role('Admin', 'ComplianceOfficer', 'Executive')
+@router.get('/coverage', response_model=list[ComplianceFrameworkCoverage])
+def framework_coverage(user=Depends(reader)):
+    return coverage()
+@router.get('/gaps')
+def control_gaps(framework: str | None = Query(None, max_length=255), user=Depends(reader)):
+    return gaps(framework)

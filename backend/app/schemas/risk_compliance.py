@@ -21,8 +21,9 @@ class ComplianceFrameworkCoverage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    message: str
+    message: str = Field(min_length=1, max_length=8000)
     conversation_id: Optional[str] = None
+    model: Optional[str] = None
 
 
 class ChatResponse(BaseModel):

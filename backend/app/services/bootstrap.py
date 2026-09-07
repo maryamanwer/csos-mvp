@@ -45,9 +45,11 @@ ROLE_PERMISSION_CODES = {
 
 def seed_identity_data(db: Session) -> None:
     roles: dict[str, Role] = {}
+    new_roles: set[str] = set()
     for name, description in ROLE_DESCRIPTIONS.items():
         role = db.query(Role).filter(Role.name == name).first()
         if not role:
+            new_roles.add(name)
             role = Role(name=name, description=description)
             db.add(role)
             db.flush()
@@ -63,7 +65,8 @@ def seed_identity_data(db: Session) -> None:
         permissions[code] = permission
 
     for role_name, codes in ROLE_PERMISSION_CODES.items():
-        roles[role_name].permissions = [permissions[code] for code in sorted(codes)]
+        if role_name in new_roles:
+            roles[role_name].permissions = [permissions[code] for code in sorted(codes)]
 
     admin = db.query(User).filter(User.email == settings.DEMO_ADMIN_EMAIL).first()
     if not admin:

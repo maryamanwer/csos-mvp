@@ -1,38 +1,45 @@
-import React, { useState } from "react";
-import { Alert, Button, Card, CardContent, MenuItem, Stack, TextField, Typography } from "@mui/material";
-import { generateReport } from "@/services/api";
-
+import React, { useEffect, useState } from 'react';
+import { Alert, Button, Card, CardContent, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { api, generateReport } from '@/services/api';
 export const ReportsPage = () => {
-  const [reportType, setReportType] = useState("risk");
-  const [format, setFormat] = useState("pdf");
-  const [status, setStatus] = useState<string | null>(null);
-
-  const handleGenerate = async () => {
-    const { data } = await generateReport(reportType, format);
-    setStatus(`Report queued: ${data.report_type} (${data.format})`);
+  const [kind, setKind] = useState('risk');
+  const [format, setFormat] = useState('pdf');
+  const [reports, setReports] = useState<any[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const load = () => api.get('/reports').then(r => setReports(r.data));
+  useEffect(() => { load().catch(() => setError('Could not load report history.')); }, []);
+  const download = async (report: any) => {
+    try {
+      const {data} = await api.get(`/reports/${report.id}/download`, {responseType: 'blob'});
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a'); a.href = url; a.download = `csos-${report.report_type}.${report.format}`; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch { setError('Download failed. Please try again.'); }
   };
-
-  return (
-    <>
-      <Typography variant="h4" gutterBottom>Reports</Typography>
-      <Card sx={{ maxWidth: 480 }}>
-        <CardContent>
-          <Stack spacing={2}>
-            {status && <Alert severity="success">{status}</Alert>}
-            <TextField select label="Report Type" value={reportType} onChange={(e) => setReportType(e.target.value)}>
-              <MenuItem value="risk">Risk</MenuItem>
-              <MenuItem value="compliance">Compliance</MenuItem>
-              <MenuItem value="asset">Asset</MenuItem>
-            </TextField>
-            <TextField select label="Format" value={format} onChange={(e) => setFormat(e.target.value)}>
-              <MenuItem value="pdf">PDF</MenuItem>
-              <MenuItem value="xlsx">Excel</MenuItem>
-            </TextField>
-            <Button variant="contained" onClick={handleGenerate}>Generate</Button>
-            {/* TODO(P4): real PDF/Excel generation + download link + history table */}
-          </Stack>
-        </CardContent>
-      </Card>
-    </>
-  );
+  const generate = async () => {
+    setBusy(true); setError('');
+    try { await generateReport(kind, format); await load(); }
+    catch { setError('Report generation failed. Check that the database is available.'); }
+    finally { setBusy(false); }
+  };
+  return <Stack spacing={2}>
+    <Typography variant="h4">Reports</Typography>
+    {error && <Alert severity="error">{error}</Alert>}
+    <Card><CardContent><Stack spacing={2}>
+      <TextField select label="Report type" value={kind} onChange={e => setKind(e.target.value)}>
+        {['risk','compliance','asset'].map(v => <MenuItem key={v} value={v}>{v}</MenuItem>)}
+      </TextField>
+      <TextField select label="Format" value={format} onChange={e => setFormat(e.target.value)}>
+        <MenuItem value="pdf">PDF</MenuItem><MenuItem value="xlsx">Excel</MenuItem>
+      </TextField>
+      <Button variant="contained" disabled={busy} onClick={generate}>{busy ? 'Generating…' : 'Generate report'}</Button>
+    </Stack></CardContent></Card>
+    <Typography variant="h6">Your report history</Typography>
+    {!reports.length && <Typography>No reports generated yet.</Typography>}
+    {reports.map(r => <Card key={r.id}><CardContent><Stack direction="row" justifyContent="space-between">
+      <Typography>{r.report_type} · {r.format.toUpperCase()} · {new Date(r.created_at).toLocaleString()}</Typography>
+      <Button onClick={() => download(r)}>Download</Button>
+    </Stack></CardContent></Card>)}
+  </Stack>;
 };

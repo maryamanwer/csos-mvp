@@ -1,42 +1,14 @@
-import React, { useEffect, useState } from "react";
-import { Chip, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
-import { topRisks } from "@/services/api";
-import { Risk } from "@/types";
-
-export const RiskDashboardPage = () => {
-  const [risks, setRisks] = useState<Risk[]>([]);
-
-  useEffect(() => {
-    topRisks(20).then((res) => setRisks(res.data)).catch(() => setRisks([]));
-  }, []);
-
-  return (
-    <>
-      <Typography variant="h4" gutterBottom>Risk Dashboard</Typography>
-      {/* TODO(P4): likelihood x impact heatmap (recharts ScatterChart or custom SVG grid) */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Risk</TableCell><TableCell>Score</TableCell><TableCell>Likelihood</TableCell>
-              <TableCell>Impact</TableCell><TableCell>Status</TableCell><TableCell>Affected Asset</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {risks.map((r) => (
-              <TableRow key={r.id}>
-                <TableCell>{r.title}</TableCell>
-                <TableCell><Chip label={r.score} color={r.score > 70 ? "error" : r.score > 40 ? "warning" : "success"} size="small" /></TableCell>
-                <TableCell>{r.likelihood}</TableCell>
-                <TableCell>{r.impact}</TableCell>
-                <TableCell>{r.status}</TableCell>
-                <TableCell>{r.affected_asset_id ?? "—"}</TableCell>
-              </TableRow>
-            ))}
-            {risks.length === 0 && <TableRow><TableCell colSpan={6}>No risk data yet.</TableCell></TableRow>}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </>
-  );
+import React, {useEffect,useState} from 'react';
+import {Alert, Chip, Paper, Table, TableBody, TableCell, TableHead, TableRow, Typography, Stack} from '@mui/material';
+import {api} from '@/services/api';
+export const RiskDashboardPage=()=>{
+ const [rows,setRows]=useState<any[]>([]);const [error,setError]=useState('');
+ useEffect(()=>{api.get('/risk/assessments').then(r=>setRows(r.data)).catch(()=>setError('Unable to calculate risk. Check graph availability.'));},[]);
+ return <Stack spacing={2}><Typography variant="h4">Risk Dashboard</Typography>
+ {error&&<Alert severity="error">{error}</Alert>}
+ <Typography>Scores prioritize assets using active vulnerability severity, business criticality, and exposure. Internal exposure is assumed when unset. This is a prioritization model, not a probability of attack.</Typography>
+ <Paper sx={{overflowX:'auto'}}><Table><TableHead><TableRow>{['Asset','Score / 100','Likelihood','Impact','Explanation'].map(h=><TableCell key={h}>{h}</TableCell>)}</TableRow></TableHead>
+ <TableBody>{rows.map(r=><TableRow key={r.affected_asset_id}><TableCell>{r.title}</TableCell><TableCell><Chip label={r.score} color={r.score>70?'error':r.score>40?'warning':'success'}/></TableCell><TableCell>{r.likelihood}</TableCell><TableCell>{r.impact}</TableCell><TableCell>{r.explanation}</TableCell></TableRow>)}</TableBody></Table></Paper>
+ {!rows.length&&!error&&<Typography>No assets to assess.</Typography>}
+ </Stack>;
 };
