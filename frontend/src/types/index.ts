@@ -1,4 +1,4 @@
-export type Role = "Admin" | "Executive" | "Analyst" | "Engineer" | "ComplianceOfficer";
+export type Role = "Admin" | "Executive" | "Analyst" | "Engineer" | "SecurityArchitect" | "ComplianceOfficer";
 
 export interface User {
   id: string;
@@ -15,12 +15,14 @@ export type Criticality = "low" | "medium" | "high" | "critical";
 export interface Asset {
   id: string;
   name: string;
-  type: "server" | "application" | "network_device" | "database" | "cloud_resource";
+  type: "server" | "application" | "network_device" | "identity" | "database" | "cloud_resource";
   environment: string;
   criticality: Criticality;
+  data_sensitivity: "public" | "internal" | "confidential" | "restricted";
   owner?: string;
   ip_address?: string;
   description?: string;
+  exposure?: "internal" | "partner" | "internet";
   risk_score?: number;
 }
 

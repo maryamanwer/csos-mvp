@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.security import require_role
+from app.core.security import require_permission
 from app.graph.neo4j_client import neo4j_client
 from app.schemas.asset import (
     AssetCreate,
@@ -14,13 +14,14 @@ from app.schemas.asset import (
     AssetUpdate,
     BulkImportError,
     BulkImportResult,
+    RelationshipImportRow,
 )
 from app.services.audit import record_audit
 from app.services.imports import parse_tabular_upload
 
 router = APIRouter(prefix="/assets", tags=["assets"])
-READ_ROLES = ("Admin", "Engineer", "Analyst", "Executive", "ComplianceOfficer")
-WRITE_ROLES = ("Admin", "Engineer")
+asset_reader = require_permission("asset:read")
+asset_writer = require_permission("asset:write")
 
 
 @router.get("", response_model=list[AssetOut])
@@ -31,7 +32,7 @@ def list_assets(
     environment: str | None = Query(default=None),
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=500),
-    user: dict = Depends(require_role(*READ_ROLES)),
+    user: dict = Depends(asset_reader),
 ):
     return neo4j_client.list_assets(
         search=search,
@@ -46,7 +47,7 @@ def list_assets(
 @router.post("", response_model=AssetOut, status_code=status.HTTP_201_CREATED)
 def create_asset(
     payload: AssetCreate,
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(asset_writer),
     db: Session = Depends(get_db),
 ):
     asset = neo4j_client.create_asset(payload.model_dump())
@@ -65,7 +66,7 @@ def create_asset(
 @router.post("/import", response_model=BulkImportResult)
 async def import_assets(
     file: UploadFile = File(...),
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(asset_writer),
     db: Session = Depends(get_db),
 ):
     try:
@@ -97,10 +98,43 @@ async def import_assets(
     return BulkImportResult(imported=imported, failed=len(errors), errors=errors[:50])
 
 
+@router.post("/relationships/import", response_model=BulkImportResult)
+async def import_relationships(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(asset_writer),
+    db: Session = Depends(get_db),
+):
+    try:
+        rows = parse_tabular_upload(file.filename or "relationships.csv", await file.read())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    errors: list[BulkImportError] = []
+    imported = 0
+    for index, row in enumerate(rows, start=2):
+        try:
+            normalized = {**row, "relationship_type": str(row.get("relationship_type", "")).strip().upper()}
+            item = RelationshipImportRow.model_validate(normalized)
+            relationship = neo4j_client.create_asset_relationship(
+                item.source_id, item.target_id, item.relationship_type, {}
+            )
+            if not relationship:
+                raise ValueError("Source or target asset was not found")
+            imported += 1
+        except (ValidationError, ValueError) as exc:
+            errors.append(BulkImportError(row=index, message=str(exc)))
+    record_audit(
+        db, "ASSET_RELATIONSHIP_IMPORT", user_id=current_user["id"],
+        entity_type="AssetRelationship",
+        metadata={"file": file.filename, "imported": imported, "failed": len(errors)},
+    )
+    db.commit()
+    return BulkImportResult(imported=imported, failed=len(errors), errors=errors[:50])
+
+
 @router.get("/{asset_id}", response_model=AssetOut)
 def get_asset(
     asset_id: str,
-    user: dict = Depends(require_role(*READ_ROLES)),
+    user: dict = Depends(asset_reader),
 ):
     asset = neo4j_client.get_asset(asset_id)
     if not asset:
@@ -112,7 +146,7 @@ def get_asset(
 def update_asset(
     asset_id: str,
     payload: AssetUpdate,
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(asset_writer),
     db: Session = Depends(get_db),
 ):
     properties = payload.model_dump(exclude_unset=True)
@@ -134,7 +168,7 @@ def update_asset(
 @router.delete("/{asset_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_asset(
     asset_id: str,
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(asset_writer),
     db: Session = Depends(get_db),
 ):
     if not neo4j_client.delete_asset(asset_id):
@@ -153,7 +187,7 @@ def delete_asset(
 def create_relationship(
     asset_id: str,
     payload: AssetRelationshipCreate,
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(asset_writer),
     db: Session = Depends(get_db),
 ):
     relationship = neo4j_client.create_asset_relationship(
@@ -187,7 +221,7 @@ def create_relationship(
 def delete_relationship(
     asset_id: str,
     relationship_id: str,
-    current_user: dict = Depends(require_role(*WRITE_ROLES)),
+    current_user: dict = Depends(asset_writer),
     db: Session = Depends(get_db),
 ):
     if not neo4j_client.delete_asset_relationship(relationship_id):

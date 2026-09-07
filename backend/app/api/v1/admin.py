@@ -17,8 +17,25 @@ from app.schemas.auth import (
     UserUpdate,
 )
 from app.services.audit import record_audit
+from app.core.config import settings
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.get("/settings")
+def system_settings(user: dict = Depends(require_role("Admin"))):
+    """Return non-secret effective settings for deployment verification."""
+    return {
+        "environment": settings.ENVIRONMENT,
+        "debug": settings.DEBUG,
+        "access_token_minutes": settings.ACCESS_TOKEN_EXPIRE_MINUTES,
+        "refresh_token_days": settings.REFRESH_TOKEN_EXPIRE_DAYS,
+        "max_import_rows": settings.MAX_IMPORT_ROWS,
+        "ai_provider": settings.AI_PROVIDER,
+        "ai_default_model": settings.AI_DEFAULT_MODEL,
+        "ai_available_models": list(settings.available_ai_models),
+        "api_documentation": "/docs",
+    }
 
 
 def _user_out(user: User) -> UserOut:

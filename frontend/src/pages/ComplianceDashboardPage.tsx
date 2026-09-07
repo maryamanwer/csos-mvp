@@ -1,39 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { LinearProgress, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from "@mui/material";
-import { complianceCoverage } from "@/services/api";
-import { ComplianceCoverage } from "@/types";
-
-export const ComplianceDashboardPage = () => {
-  const [coverage, setCoverage] = useState<ComplianceCoverage[]>([]);
-
-  useEffect(() => {
-    complianceCoverage().then((res) => setCoverage(res.data)).catch(() => setCoverage([]));
-  }, []);
-
-  return (
-    <>
-      <Typography variant="h4" gutterBottom>Compliance Dashboard</Typography>
-      {/* TODO(P4): add framework selector and coverage visualization */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow><TableCell>Framework</TableCell><TableCell>Controls Met</TableCell><TableCell>Coverage</TableCell></TableRow>
-          </TableHead>
-          <TableBody>
-            {coverage.map((c) => (
-              <TableRow key={c.framework}>
-                <TableCell>{c.framework}</TableCell>
-                <TableCell>{c.controls_met} / {c.total_controls}</TableCell>
-                <TableCell sx={{ width: 300 }}>
-                  <LinearProgress variant="determinate" value={c.coverage_pct} sx={{ height: 10, borderRadius: 5 }} />
-                  <Typography variant="caption">{c.coverage_pct}%</Typography>
-                </TableCell>
-              </TableRow>
-            ))}
-            {coverage.length === 0 && <TableRow><TableCell colSpan={3}>No compliance data yet.</TableCell></TableRow>}
-          </TableBody>
-        </Table>
-      </TableContainer>
-    </>
-  );
+import React,{useEffect,useState} from 'react';
+import {Alert,LinearProgress,MenuItem,Stack,TextField,Typography,Card,CardContent} from '@mui/material';
+import {api} from '@/services/api';
+export const ComplianceDashboardPage=()=>{
+ const [coverage,setCoverage]=useState<any[]>([]);const [gaps,setGaps]=useState<any[]>([]);const [framework,setFramework]=useState('');const [error,setError]=useState('');
+ useEffect(()=>{Promise.all([api.get('/compliance/coverage'),api.get('/compliance/gaps')]).then(([a,b])=>{setCoverage(a.data);setGaps(b.data);}).catch(()=>setError('Unable to load compliance evidence.'));},[]);
+ return <Stack spacing={2}><Typography variant="h4">Compliance Dashboard</Typography>{error&&<Alert severity="error">{error}</Alert>}
+ <Typography>Coverage reflects implementation status of controls in your graph. A gap also includes controls without asset mappings; coverage alone is not an audit certification.</Typography>
+ <TextField select label="Framework" value={framework} onChange={e=>setFramework(e.target.value)}><MenuItem value="">All frameworks</MenuItem>{coverage.map(c=><MenuItem key={c.framework} value={c.framework}>{c.framework}</MenuItem>)}</TextField>
+ {coverage.filter(c=>!framework||c.framework===framework).map(c=><Card key={c.framework}><CardContent><Typography>{c.framework} · {c.controls_met}/{c.total_controls} implemented · {c.coverage_pct}%</Typography><LinearProgress variant="determinate" value={c.coverage_pct}/></CardContent></Card>)}
+ <Typography variant="h6">Control gaps</Typography>
+ {gaps.filter(g=>!framework||g.framework===framework).map(g=><Alert severity="warning" key={g.framework+g.id}>{g.name||g.id} · {g.framework} · {g.reason}</Alert>)}
+ {!coverage.length&&!error&&<Typography>No frameworks in the graph yet.</Typography>}
+ </Stack>;
 };

@@ -1,7 +1,7 @@
 """Interactive topology data sourced from the Neo4j Knowledge Graph."""
 from fastapi import APIRouter, Depends, Query
 
-from app.core.security import require_role
+from app.core.security import require_permission
 from app.graph.neo4j_client import neo4j_client
 from app.schemas.topology import TopologyGraph
 
@@ -15,9 +15,7 @@ def get_topology(
         description="Return the selected asset and its directly connected entities.",
     ),
     relationship_limit: int = Query(default=500, ge=1, le=2000),
-    user: dict = Depends(
-        require_role("Admin", "Analyst", "Engineer", "Executive", "ComplianceOfficer")
-    ),
+    user: dict = Depends(require_permission("asset:read")),
 ):
     return neo4j_client.get_topology(
         relationship_limit=relationship_limit,

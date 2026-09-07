@@ -1,17 +1,6 @@
-"""
-Asset Intelligence Agent — LangGraph node.
-TODO(P3): replace the naive keyword lookup with a ModelProvider call
-that decides which asset_tools function(s) to invoke, then summarizes
-the retrieved facts in natural language.
-"""
-from app.agents.state import AgentState
-from app.agents.tools import asset_tools
-
-
-def asset_agent_node(state: AgentState) -> AgentState:
-    query = state.get("user_query", "")
-    results = asset_tools.search_assets(name_contains=query, limit=5)
-
-    state.setdefault("retrieved_context", {})["assets"] = results
-    state.setdefault("agent_trace", []).append("asset_intelligence_agent")
+from app.graph.neo4j_client import neo4j_client
+def asset_agent_node(state):
+    # Retrieve bounded inventory; relevance is resolved by the answer model.
+    state.setdefault('retrieved_context', {})['assets'] = neo4j_client.list_assets(limit=100)
+    state.setdefault('agent_trace', []).append('asset_intelligence_agent')
     return state

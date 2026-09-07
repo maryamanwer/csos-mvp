@@ -16,6 +16,7 @@ import { ReportsPage } from "@/pages/ReportsPage";
 import { AdministrationPage } from "@/pages/AdministrationPage";
 import { NetworkTopologyPage } from "@/pages/NetworkTopologyPage";
 import { VulnerabilityRepositoryPage } from "@/pages/VulnerabilityRepositoryPage";
+import { WorkflowsPage } from "@/pages/WorkflowsPage";
 import { Role } from "@/types";
 
 const landingPath = (role: Role) => {
@@ -49,16 +50,17 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/dashboard/executive" element={<Protected roles={["Admin", "Executive"]}><ExecutiveDashboard /></Protected>} />
-          <Route path="/dashboard/analyst" element={<Protected roles={["Admin", "Analyst", "Engineer"]}><AnalystDashboard /></Protected>} />
-          <Route path="/assets" element={<Protected roles={["Admin", "Analyst", "Engineer", "Executive"]}><AssetInventoryPage /></Protected>} />
-          <Route path="/assets/:assetId" element={<Protected roles={["Admin", "Analyst", "Engineer", "Executive"]}><AssetDetailsPage /></Protected>} />
-          <Route path="/topology" element={<Protected roles={["Admin", "Analyst", "Engineer", "Executive", "ComplianceOfficer"]}><NetworkTopologyPage /></Protected>} />
-          <Route path="/vulnerabilities" element={<Protected roles={["Admin", "Analyst", "Engineer", "Executive"]}><VulnerabilityRepositoryPage /></Protected>} />
-          <Route path="/risk" element={<Protected roles={["Admin", "Analyst", "Engineer", "Executive"]}><RiskDashboardPage /></Protected>} />
-          <Route path="/compliance" element={<Protected roles={["Admin", "ComplianceOfficer", "Executive"]}><ComplianceDashboardPage /></Protected>} />
+          <Route path="/dashboard/analyst" element={<Protected roles={["Admin", "Analyst", "Engineer", "SecurityArchitect"]}><AnalystDashboard /></Protected>} />
+          <Route path="/assets" element={<Protected roles={["Admin", "Analyst", "Engineer", "SecurityArchitect", "Executive"]}><AssetInventoryPage /></Protected>} />
+          <Route path="/assets/:assetId" element={<Protected roles={["Admin", "Analyst", "Engineer", "SecurityArchitect", "Executive"]}><AssetDetailsPage /></Protected>} />
+          <Route path="/topology" element={<Protected roles={["Admin", "Analyst", "Engineer", "SecurityArchitect", "Executive", "ComplianceOfficer"]}><NetworkTopologyPage /></Protected>} />
+          <Route path="/vulnerabilities" element={<Protected roles={["Admin", "Analyst", "Engineer", "SecurityArchitect", "Executive"]}><VulnerabilityRepositoryPage /></Protected>} />
+          <Route path="/risk" element={<Protected roles={["Admin", "Analyst", "Engineer", "SecurityArchitect", "Executive"]}><RiskDashboardPage /></Protected>} />
+          <Route path="/compliance" element={<Protected roles={["Admin", "SecurityArchitect", "ComplianceOfficer", "Executive"]}><ComplianceDashboardPage /></Protected>} />
           <Route path="/chat" element={<Protected><ChatAssistantPage /></Protected>} />
           <Route path="/standards" element={<Protected roles={["Admin", "ComplianceOfficer"]}><CustomStandardsPage /></Protected>} />
           <Route path="/reports" element={<Protected roles={["Admin", "ComplianceOfficer", "Executive"]}><ReportsPage /></Protected>} />
+          <Route path="/workflows" element={<Protected roles={["Admin", "Analyst", "Engineer", "SecurityArchitect", "ComplianceOfficer"]}><WorkflowsPage /></Protected>} />
           <Route path="/admin" element={<Protected roles={["Admin"]}><AdministrationPage /></Protected>} />
           <Route path="*" element={<Navigate to="/dashboard/executive" replace />} />
         </Routes>

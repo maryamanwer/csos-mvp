@@ -47,7 +47,7 @@ export const AssetDetailsPage = () => {
   const [targetId, setTargetId] = useState("");
   const [relationshipType, setRelationshipType] = useState("CONNECTS_TO");
   const [message, setMessage] = useState<string | null>(null);
-  const canWrite = user?.role === "Admin" || user?.role === "Engineer";
+  const canWrite = user?.role === "Admin" || user?.role === "Engineer" || user?.role === "SecurityArchitect";
 
   useEffect(() => {
     if (!assetId) return;
@@ -122,6 +122,7 @@ export const AssetDetailsPage = () => {
         {tab === 0 && <Box sx={{ display: "grid", gap: 1 }}>
           <Typography><strong>Type:</strong> {asset.type.replace(/_/g, " ")}</Typography>
           <Typography><strong>Environment:</strong> {asset.environment}</Typography>
+          <Typography><strong>Data sensitivity:</strong> {asset.data_sensitivity}</Typography>
           <Typography><strong>Owner:</strong> {asset.owner ?? "—"}</Typography>
           <Typography><strong>IP address:</strong> {asset.ip_address ?? "—"}</Typography>
           <Typography><strong>Description:</strong> {asset.description ?? "—"}</Typography>
@@ -139,7 +140,7 @@ export const AssetDetailsPage = () => {
           </ListItem>)}
           {vulnerabilities.length === 0 && <ListItem><ListItemText primary="No vulnerabilities linked to this asset." /></ListItem>}
         </List>}
-        {tab === 3 && <Typography color="text.secondary">Control mapping is completed in the platform completion phase.</Typography>}
+        {tab === 3 && <Typography color="text.secondary">Mapped controls appear in Network Topology and the Compliance gap analysis.</Typography>}
         {tab === 4 && <Typography color="text.secondary">Asset changes are recorded in the Administration audit log.</Typography>}
       </Box>
 

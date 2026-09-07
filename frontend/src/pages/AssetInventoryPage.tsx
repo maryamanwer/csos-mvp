@@ -30,6 +30,7 @@ import {
   createAsset,
   deleteAsset,
   importAssets,
+  importAssetRelationships,
   listAssets,
   updateAsset,
 } from "@/services/api";
@@ -44,7 +45,9 @@ const EMPTY_ASSET: AssetDraft = {
   type: "server",
   environment: "production",
   criticality: "medium",
+  data_sensitivity: "internal",
   owner: "",
+  exposure: "internal",
 };
 
 export const AssetInventoryPage = () => {
@@ -56,7 +59,7 @@ export const AssetInventoryPage = () => {
   const [message, setMessage] = useState<{ severity: "success" | "error"; text: string } | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const canWrite = user?.role === "Admin" || user?.role === "Engineer";
+  const canWrite = user?.role === "Admin" || user?.role === "Engineer" || user?.role === "SecurityArchitect";
 
   const loadAssets = useCallback(() => {
     listAssets(search ? { search } : undefined)
@@ -79,7 +82,9 @@ export const AssetInventoryPage = () => {
       type: asset.type,
       environment: asset.environment,
       criticality: asset.criticality,
+      data_sensitivity: asset.data_sensitivity ?? "internal",
       owner: asset.owner ?? "",
+      exposure: asset.exposure ?? "internal",
     });
     setDialogOpen(true);
   };
@@ -121,11 +126,28 @@ export const AssetInventoryPage = () => {
     }
   };
 
+  const uploadRelationships = async (file?: File) => {
+    if (!file) return;
+    try {
+      const { data } = await importAssetRelationships(file);
+      setMessage({ severity: data.failed ? "error" : "success", text: `${data.imported} relationships imported; ${data.failed} rows failed.` });
+      loadAssets();
+    } catch {
+      setMessage({ severity: "error", text: "Relationship import failed. Use source_id, target_id, and relationship_type columns." });
+    }
+  };
+
   return (
     <>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2, gap: 2, flexWrap: "wrap" }}>
         <Typography variant="h4">Asset Inventory</Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
+          {canWrite && (
+            <Button component="label" variant="outlined" startIcon={<UploadFileIcon />}>
+              Import Relationships
+              <input hidden type="file" accept=".csv,.xlsx,.xls" onChange={(event) => void uploadRelationships(event.target.files?.[0])} />
+            </Button>
+          )}
           {canWrite && (
             <Button component="label" variant="outlined" startIcon={<UploadFileIcon />}>
               Import CSV/Excel
@@ -157,6 +179,7 @@ export const AssetInventoryPage = () => {
               <TableCell>Type</TableCell>
               <TableCell>Owner</TableCell>
               <TableCell>Criticality</TableCell>
+              <TableCell>Data sensitivity</TableCell>
               <TableCell>Environment</TableCell>
               <TableCell>Risk Score</TableCell>
               {canWrite && <TableCell align="right">Actions</TableCell>}
@@ -169,6 +192,7 @@ export const AssetInventoryPage = () => {
                 <TableCell>{asset.type.replace(/_/g, " ")}</TableCell>
                 <TableCell>{asset.owner ?? "—"}</TableCell>
                 <TableCell><Chip label={asset.criticality} sx={{ bgcolor: riskColor(asset.criticality), color: "#fff" }} size="small" /></TableCell>
+                <TableCell>{asset.data_sensitivity}</TableCell>
                 <TableCell>{asset.environment}</TableCell>
                 <TableCell>{asset.risk_score ?? 0}</TableCell>
                 {canWrite && (
@@ -179,7 +203,7 @@ export const AssetInventoryPage = () => {
                 )}
               </TableRow>
             ))}
-            {assets.length === 0 && <TableRow><TableCell colSpan={canWrite ? 7 : 6}>No matching assets.</TableCell></TableRow>}
+            {assets.length === 0 && <TableRow><TableCell colSpan={canWrite ? 8 : 7}>No matching assets.</TableCell></TableRow>}
           </TableBody>
         </Table>
       </TableContainer>
@@ -191,12 +215,18 @@ export const AssetInventoryPage = () => {
           <TextField select label="Type" value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as AssetDraft["type"] })}>
             {[
               ["server", "Server"], ["application", "Application"], ["network_device", "Network device"],
-              ["database", "Database"], ["cloud_resource", "Cloud resource"],
+              ["identity", "Identity"], ["database", "Database"], ["cloud_resource", "Cloud resource"],
             ].map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
           </TextField>
           <TextField label="Environment" value={draft.environment} onChange={(event) => setDraft({ ...draft, environment: event.target.value })} required />
           <TextField select label="Criticality" value={draft.criticality} onChange={(event) => setDraft({ ...draft, criticality: event.target.value as AssetDraft["criticality"] })}>
             {["low", "medium", "high", "critical"].map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+          </TextField>
+          <TextField select label="Data sensitivity" value={draft.data_sensitivity} onChange={(event) => setDraft({ ...draft, data_sensitivity: event.target.value as AssetDraft["data_sensitivity"] })}>
+            {["public", "internal", "confidential", "restricted"].map((value) => <MenuItem key={value} value={value}>{value}</MenuItem>)}
+          </TextField>
+          <TextField select label="Exposure" value={draft.exposure ?? "internal"} onChange={event => setDraft({...draft, exposure: event.target.value as AssetDraft["exposure"]})}>
+            {["internal", "partner", "internet"].map(value => <MenuItem key={value} value={value}>{value}</MenuItem>)}
           </TextField>
           <TextField label="Owner" value={draft.owner ?? ""} onChange={(event) => setDraft({ ...draft, owner: event.target.value })} />
         </DialogContent>

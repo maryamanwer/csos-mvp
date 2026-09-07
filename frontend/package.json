@@ -10,14 +10,14 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@emotion/react": "^11.13.3",
+    "@emotion/styled": "^11.13.0",
+    "@mui/icons-material": "^5.18.0",
+    "@mui/material": "^5.16.7",
+    "axios": "^1.7.7",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
-    "@mui/material": "^5.16.7",
-    "@mui/icons-material": "^5.16.7",
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
-    "axios": "^1.7.7",
     "recharts": "^2.12.7"
   },
   "devDependencies": {
